@@ -1,0 +1,17 @@
+[Unit]
+Description=Agents Orchestrator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ ansible_user }}
+WorkingDirectory=/home/{{ ansible_user }}/agents-orchestrator
+EnvironmentFile=/home/{{ ansible_user }}/agents-orchestrator/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/local/bin/bun run src/server.ts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

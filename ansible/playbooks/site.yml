@@ -34,3 +34,4 @@
     - role: expose_dev_server
     - role: code_server
     - role: coredns
+    - role: agents_orchestrator

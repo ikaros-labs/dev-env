@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: agents_orchestrator
+  author: ikaros-iac
+  description: Install and run agents-orchestrator as a systemd service
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble  # 24.04 LTS
+
+dependencies: []
