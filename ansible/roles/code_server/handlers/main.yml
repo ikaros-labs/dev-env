@@ -1,6 +1,6 @@
 ---
 - name: Restart code-server
   ansible.builtin.systemd:
-    name: code-server@ikaros
+    name: code-server@{{ ansible_user }}
     state: restarted
   become: true

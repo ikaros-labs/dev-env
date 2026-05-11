@@ -13,9 +13,9 @@
 
 # ── 2. Set zsh as login shell ────────────────────────────────────────────────
 
-- name: Set login shell to zsh for ikaros
+- name: Set login shell to zsh for {{ ansible_user }}
   ansible.builtin.user:
-    name: ikaros
+    name: "{{ ansible_user }}"
     shell: /usr/bin/zsh
   become: true
 
@@ -24,9 +24,9 @@
 - name: Deploy ~/.zshrc from template
   ansible.builtin.template:
     src: zshrc.j2
-    dest: /home/ikaros/.zshrc
-    owner: ikaros
-    group: ikaros
+    dest: /home/{{ ansible_user }}/.zshrc
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0644"
   become: false
 
@@ -34,7 +34,7 @@
 
 - name: Create ~/.zshrc.d directory
   ansible.builtin.file:
-    path: /home/ikaros/.zshrc.d
+    path: /home/{{ ansible_user }}/.zshrc.d
     state: directory
     mode: "0755"
   become: false
@@ -42,28 +42,28 @@
 - name: Deploy aliases.zsh
   ansible.builtin.copy:
     src: zshrc.d/aliases.zsh
-    dest: /home/ikaros/.zshrc.d/aliases.zsh
+    dest: /home/{{ ansible_user }}/.zshrc.d/aliases.zsh
     mode: "0644"
   become: false
 
 - name: Deploy git.zsh
   ansible.builtin.copy:
     src: zshrc.d/git.zsh
-    dest: /home/ikaros/.zshrc.d/git.zsh
+    dest: /home/{{ ansible_user }}/.zshrc.d/git.zsh
     mode: "0644"
   become: false
 
 - name: Deploy docker.zsh
   ansible.builtin.copy:
     src: zshrc.d/docker.zsh
-    dest: /home/ikaros/.zshrc.d/docker.zsh
+    dest: /home/{{ ansible_user }}/.zshrc.d/docker.zsh
     mode: "0644"
   become: false
 
 - name: Deploy autosuggestions.zsh
   ansible.builtin.copy:
     src: zshrc.d/autosuggestions.zsh
-    dest: /home/ikaros/.zshrc.d/autosuggestions.zsh
+    dest: /home/{{ ansible_user }}/.zshrc.d/autosuggestions.zsh
     mode: "0644"
   become: false
 
@@ -71,7 +71,7 @@
 
 - name: Remove ble.sh directory
   ansible.builtin.file:
-    path: /home/ikaros/.local/share/blesh
+    path: /home/{{ ansible_user }}/.local/share/blesh
     state: absent
   become: false
 
@@ -85,21 +85,21 @@
 
 - name: Remove ble.sh init block from ~/.bashrc
   ansible.builtin.blockinfile:
-    path: /home/ikaros/.bashrc
+    path: /home/{{ ansible_user }}/.bashrc
     marker: "# {mark} ANSIBLE MANAGED BLOCK — ble.sh init"
     state: absent
   become: false
 
 - name: Remove bashrc.d sourcing block from ~/.bashrc
   ansible.builtin.blockinfile:
-    path: /home/ikaros/.bashrc
+    path: /home/{{ ansible_user }}/.bashrc
     marker: "# {mark} ANSIBLE MANAGED BLOCK — bashrc.d"
     state: absent
   become: false
 
 - name: Remove ble.sh attach block from ~/.bashrc
   ansible.builtin.blockinfile:
-    path: /home/ikaros/.bashrc
+    path: /home/{{ ansible_user }}/.bashrc
     marker: "# {mark} ANSIBLE MANAGED BLOCK — ble.sh attach"
     state: absent
   become: false
@@ -108,6 +108,6 @@
 
 - name: Remove ~/.bashrc.d directory
   ansible.builtin.file:
-    path: /home/ikaros/.bashrc.d
+    path: /home/{{ ansible_user }}/.bashrc.d
     state: absent
   become: false

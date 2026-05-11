@@ -7,26 +7,26 @@
 
 - name: Create code-server config directory
   ansible.builtin.file:
-    path: /home/ikaros/.config/code-server
+    path: /home/{{ ansible_user }}/.config/code-server
     state: directory
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0700"
   become: true
 
 - name: Deploy code-server config
   ansible.builtin.template:
     src: config.yaml.j2
-    dest: /home/ikaros/.config/code-server/config.yaml
-    owner: ikaros
-    group: ikaros
+    dest: /home/{{ ansible_user }}/.config/code-server/config.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0600"
   become: true
   notify: Restart code-server
 
 - name: Enable and start code-server service
   ansible.builtin.systemd:
-    name: code-server@ikaros
+    name: code-server@{{ ansible_user }}
     enabled: true
     state: started
     daemon_reload: true

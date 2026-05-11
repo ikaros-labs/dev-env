@@ -11,11 +11,11 @@
   become: true
   changed_when: false
 
-- name: Install Playwright Chromium browser for ikaros user
+- name: Install Playwright Chromium browser for {{ ansible_user }}
   ansible.builtin.command:
     cmd: playwright install chromium
   become: true
-  become_user: ikaros
+  become_user: "{{ ansible_user }}"
   changed_when: false
 
 - name: Install Playwright CLI for AI agents globally via npm
@@ -24,10 +24,9 @@
     creates: /usr/bin/playwright-cli
   become: true
 
-- name: Install Playwright skills for ikaros user
+- name: Install Playwright skills for {{ ansible_user }}
   ansible.builtin.command:
     cmd: playwright-cli install --skills
   become: true
-  become_user: ikaros
+  become_user: "{{ ansible_user }}"
   changed_when: false
-

@@ -14,9 +14,15 @@ variable "tailscale_auth_key" {
   sensitive   = true
 }
 
-variable "ikaros_hashed_password" {
+variable "username" {
+  description = "Default Linux username created on all servers (overridable per-server in var.servers)"
+  type        = string
+  default     = "ikaros"
+}
+
+variable "user_hashed_password" {
   description = <<-EOT
-    SHA-512 hashed password for the ikaros user.
+    SHA-512 hashed password for the server user (var.username).
     Generate with: mkpasswd -m sha-512
     Required for sudo (NOPASSWD is intentionally not used).
   EOT
@@ -52,6 +58,7 @@ variable "servers" {
   type = map(object({
     role        = string
     server_type = optional(string)
+    username    = optional(string)
   }))
   default = {
     "dev-env" = { role = "dev" }

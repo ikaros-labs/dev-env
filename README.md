@@ -105,7 +105,7 @@ Fill in:
 |----------|----------------|
 | `hcloud_token` | Hetzner Cloud Console → Security → API Tokens |
 | `tailscale_auth_key` | Step 1 above |
-| `ikaros_hashed_password` | Step 2 above |
+| `user_hashed_password` | Step 2 above |
 
 ---
 
@@ -187,13 +187,14 @@ ansible-playbook playbooks/site.yml
 
 ```bash
 # Tailscale MagicDNS — works if MagicDNS is enabled on your tailnet.
-ssh ikaros@dev-env
+# Replace <username> with your configured username (default: ikaros).
+ssh <username>@dev-env
 
 # Alternatively, use the full MagicDNS name:
-ssh ikaros@dev-env.<your-tailnet>.ts.net
+ssh <username>@dev-env.<your-tailnet>.ts.net
 
 # Or Tailscale SSH (no key needed, uses tailnet identity):
-tailscale ssh ikaros@dev-env
+tailscale ssh <username>@dev-env
 ```
 
 ---
