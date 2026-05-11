@@ -1,0 +1,21 @@
+---
+- name: Set git user.name
+  community.general.git_config:
+    name: user.name
+    scope: global
+    value: "{{ git_user_name }}"
+  become: false
+
+- name: Set git user.email
+  community.general.git_config:
+    name: user.email
+    scope: global
+    value: "{{ git_user_email }}"
+  become: false
+
+- name: Set git pull.rebase
+  community.general.git_config:
+    name: pull.rebase
+    scope: global
+    value: "true"
+  become: false

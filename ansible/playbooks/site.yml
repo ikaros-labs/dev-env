@@ -20,6 +20,7 @@
     - role: github_cli
     - role: node_tooling
     - role: zsh_config
+    - role: git_config
 
 - name: Converge dev-env servers
   hosts: dev-env
