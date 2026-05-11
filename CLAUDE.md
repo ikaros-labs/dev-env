@@ -269,19 +269,17 @@ labels = merge(local.common_labels, { role = "<role>" })
 Where `local.common_labels` is:
 ```hcl
 {
-  environment  = var.environment
   "managed-by" = "terraform"
 }
 ```
 
-**Why**: Labels enable cost attribution, resource queries, and automation
+**Why**: Labels enable resource queries and automation
 (e.g. "restart all servers with role=web").  `managed-by=terraform` prevents
 accidental manual changes going unnoticed.
 
 **Labelling convention**:
 | Label | Values | Notes |
 |-------|--------|-------|
-| `environment` | `dev` (default), user-configurable | Set via variable |
 | `managed-by` | `terraform` | Always `terraform` in this repo |
 | `role` | `dev`, `firewall`, … | Per-resource |
 

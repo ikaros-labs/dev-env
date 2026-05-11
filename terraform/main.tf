@@ -2,7 +2,6 @@ locals {
   # All Hetzner resources receive these labels for cost attribution and
   # change-management traceability.
   common_labels = {
-    environment  = var.environment
     "managed-by" = "terraform"
   }
 

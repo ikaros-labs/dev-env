@@ -23,7 +23,6 @@ user_hashed_password = "$6$rounds=4096$yoursalt$yourhashgoeshere..."
 # --- Optional (defaults shown) ----------------------------------------------
 
 # username = "ikaros"   # Linux user created on all servers (default: ikaros)
-environment     = "dev"
 server_location = "fsn1"   # fsn1 | nbg1 | hel1 | ash | hil
 server_type     = "cx23"   # see: hcloud server-type list
 
