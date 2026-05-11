@@ -1,0 +1,16 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Restart caddy
+  ansible.builtin.systemd:
+    name: caddy
+    state: restarted
+  become: true
+
+- name: Reload caddy config
+  ansible.builtin.command:
+    cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+  changed_when: true

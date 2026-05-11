@@ -1,0 +1,6 @@
+---
+- name: Install Claude Code globally via npm
+  ansible.builtin.command:
+    cmd: npm install -g @anthropic-ai/claude-code
+    creates: /usr/bin/claude
+  become: true

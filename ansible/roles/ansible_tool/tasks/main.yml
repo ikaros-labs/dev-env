@@ -1,0 +1,7 @@
+---
+- name: Install Ansible
+  ansible.builtin.apt:
+    name: ansible
+    state: present
+    update_cache: true
+  become: true

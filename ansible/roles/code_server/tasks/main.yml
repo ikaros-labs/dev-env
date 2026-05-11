@@ -1,0 +1,33 @@
+---
+- name: Install code-server via official install script
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://code-server.dev/install.sh | sh
+    creates: /usr/bin/code-server
+  become: true
+
+- name: Create code-server config directory
+  ansible.builtin.file:
+    path: /home/ikaros/.config/code-server
+    state: directory
+    owner: ikaros
+    group: ikaros
+    mode: "0700"
+  become: true
+
+- name: Deploy code-server config
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /home/ikaros/.config/code-server/config.yaml
+    owner: ikaros
+    group: ikaros
+    mode: "0600"
+  become: true
+  notify: Restart code-server
+
+- name: Enable and start code-server service
+  ansible.builtin.systemd:
+    name: code-server@ikaros
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

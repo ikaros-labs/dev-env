@@ -1,0 +1,22 @@
+---
+# common — baseline packages present on every managed host.
+#
+# Idempotency guarantee: apt module with state=present is a no-op when the
+# package is already installed.  Re-running this role against a converged
+# host produces zero changes.
+- name: Update apt package cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Ensure baseline packages are installed
+  ansible.builtin.apt:
+    name:
+      - htop
+      - curl
+      - ca-certificates
+      - gnupg
+      - make
+    state: present
+  become: true

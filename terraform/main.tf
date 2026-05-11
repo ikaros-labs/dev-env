@@ -1,0 +1,59 @@
+locals {
+  # All Hetzner resources receive these labels for cost attribution and
+  # change-management traceability.
+  common_labels = {
+    environment  = var.environment
+    "managed-by" = "terraform"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# SSH key — registered solely to suppress Hetzner new-server credential emails.
+# The corresponding private key was discarded at creation time and was never
+# stored. cloud-init removes /root/.ssh on first boot, so the key is gone
+# before any service starts.
+# ---------------------------------------------------------------------------
+resource "hcloud_ssh_key" "placeholder" {
+  name       = "hetzner-email-suppressor"
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDp51JbJAOSTuHh47Ae7Q8Md309H/irYY2bKRCv44iz9 hetzner-email-suppressor"
+  labels     = local.common_labels
+}
+
+# ---------------------------------------------------------------------------
+# Firewall — deny all inbound traffic
+# ---------------------------------------------------------------------------
+# Hetzner Cloud firewalls are default-deny for inbound when no rules are
+# defined, so an empty rule set is the correct way to block all inbound.
+# Tailscale uses NAT traversal / DERP relays for outbound-initiated tunnels
+# and therefore needs no inbound ports.
+resource "hcloud_firewall" "main" {
+  name   = "main-firewall"
+  labels = merge(local.common_labels, { role = "firewall" })
+
+  # Intentionally no rules — deny all inbound by design.
+}
+
+# ---------------------------------------------------------------------------
+# Servers
+# ---------------------------------------------------------------------------
+resource "hcloud_server" "servers" {
+  for_each = var.servers
+
+  name        = each.key
+  server_type = coalesce(each.value.server_type, var.server_type)
+  image       = "ubuntu-24.04"
+  location    = var.server_location
+
+  backups = true
+
+  firewall_ids = [hcloud_firewall.main.id]
+  ssh_keys     = [hcloud_ssh_key.placeholder.id]
+
+  user_data = sensitive(templatefile("${path.module}/cloud-init.yaml.tftpl", {
+    tailscale_auth_key     = var.tailscale_auth_key
+    ikaros_hashed_password = var.ikaros_hashed_password
+    tailscale_role_tag     = "tag:${each.value.role}"
+  }))
+
+  labels = merge(local.common_labels, { role = each.value.role })
+}

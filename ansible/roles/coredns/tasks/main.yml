@@ -1,0 +1,59 @@
+---
+- name: Create CoreDNS deployment directory
+  ansible.builtin.file:
+    path: /opt/coredns/zones
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/coredns/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart coredns
+
+- name: Deploy Corefile
+  ansible.builtin.copy:
+    src: Corefile
+    dest: /opt/coredns/Corefile
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart coredns
+
+- name: Deploy zone file demo.nikmel.dev
+  ansible.builtin.copy:
+    src: zones/demo.nikmel.dev
+    dest: /opt/coredns/zones/demo.nikmel.dev
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart coredns
+
+- name: Deploy coredns systemd unit
+  ansible.builtin.template:
+    src: coredns.service.j2
+    dest: /etc/systemd/system/coredns.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart coredns
+
+- name: Ensure coredns service is enabled and running
+  ansible.builtin.systemd:
+    name: coredns
+    enabled: true
+    state: started
+    daemon_reload: false
+  become: true

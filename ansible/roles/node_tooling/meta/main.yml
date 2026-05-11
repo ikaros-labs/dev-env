@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: node_tooling
+  author: ikaros-iac
+  description: Node.js LTS, npm, bun, jq, and musl on all managed servers
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+
+dependencies: []

@@ -1,0 +1,18 @@
+[Unit]
+Description=Caddy (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/caddy
+ExecStart=/usr/bin/docker compose up --wait --remove-orphans
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

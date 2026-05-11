@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: ansible_tool
+  author: ikaros-iac
+  description: Install Ansible from the Ubuntu apt repository
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble  # 24.04 LTS
+
+dependencies: []

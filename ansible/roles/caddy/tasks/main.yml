@@ -1,0 +1,114 @@
+---
+- name: Assert caddy_cf_api_token is set
+  ansible.builtin.assert:
+    that: caddy_cf_api_token is defined and caddy_cf_api_token | length > 0
+    fail_msg: "caddy_cf_api_token must be set (defined in inventory/group_vars/dev/vault.yml)"
+
+- name: Create Caddy deployment directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /opt/caddy
+    - /opt/caddy/sites.d
+  become: true
+
+- name: Create demo-sites.d directory (ikaros-writable)
+  ansible.builtin.file:
+    path: /opt/caddy/demo-sites.d
+    state: directory
+    owner: ikaros
+    group: ikaros
+    mode: "0755"
+  become: true
+
+- name: Deploy Dockerfile
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: /opt/caddy/Dockerfile
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart caddy
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/caddy/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart caddy
+
+- name: Deploy Caddyfile
+  ansible.builtin.copy:
+    src: Caddyfile
+    dest: /opt/caddy/Caddyfile
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config
+
+- name: Deploy sites.d configs
+  ansible.builtin.copy:
+    src: sites.d/
+    dest: /opt/caddy/sites.d/
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config
+
+- name: Deploy caddy environment file
+  ansible.builtin.template:
+    src: caddy.env.j2
+    dest: /opt/caddy/.env
+    owner: root
+    group: root
+    mode: "0600"
+  become: true
+  notify: Restart caddy
+
+# Always run — Docker layer cache makes this a no-op when nothing changed.
+# Must happen before the systemd "ensure started" task below.
+- name: Build caddy Docker image
+  ansible.builtin.command:
+    cmd: docker compose build
+    chdir: /opt/caddy
+  become: true
+  changed_when: false
+
+- name: Deploy caddy systemd unit
+  ansible.builtin.template:
+    src: caddy.service.j2
+    dest: /etc/systemd/system/caddy.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart caddy
+
+- name: Ensure caddy service is enabled and running
+  ansible.builtin.systemd:
+    name: caddy
+    enabled: true
+    state: started
+    daemon_reload: false
+  become: true
+
+- name: Deploy caddy-reload convenience script
+  ansible.builtin.copy:
+    src: caddy-reload
+    dest: /usr/local/bin/caddy-reload
+    owner: root
+    group: root
+    mode: "0755"
+  become: true

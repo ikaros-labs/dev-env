@@ -1,0 +1,14 @@
+// /etc/apt/apt.conf.d/20auto-upgrades
+// Managed by Ansible — do not edit by hand.
+
+// Run `apt-get update` daily.
+APT::Periodic::Update-Package-Lists "1";
+
+// Download upgradeable packages daily.
+APT::Periodic::Download-Upgradeable-Packages "1";
+
+// Run unattended-upgrades daily.
+APT::Periodic::Unattended-Upgrade "1";
+
+// Clean the local download archive every 7 days.
+APT::Periodic::AutocleanInterval "7";

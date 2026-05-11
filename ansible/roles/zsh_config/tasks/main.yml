@@ -1,0 +1,113 @@
+---
+# ── 1. Install packages ─────────────────────────────────────────────────────
+
+- name: Install zsh and pwgen
+  ansible.builtin.apt:
+    name:
+      - zsh
+      - pwgen
+      - zsh-autosuggestions
+    state: present
+    update_cache: true
+  become: true
+
+# ── 2. Set zsh as login shell ────────────────────────────────────────────────
+
+- name: Set login shell to zsh for ikaros
+  ansible.builtin.user:
+    name: ikaros
+    shell: /usr/bin/zsh
+  become: true
+
+# ── 3. Deploy .zshrc ────────────────────────────────────────────────────────
+
+- name: Deploy ~/.zshrc from template
+  ansible.builtin.template:
+    src: zshrc.j2
+    dest: /home/ikaros/.zshrc
+    owner: ikaros
+    group: ikaros
+    mode: "0644"
+  become: false
+
+# ── 4. Deploy alias fragments ───────────────────────────────────────────────
+
+- name: Create ~/.zshrc.d directory
+  ansible.builtin.file:
+    path: /home/ikaros/.zshrc.d
+    state: directory
+    mode: "0755"
+  become: false
+
+- name: Deploy aliases.zsh
+  ansible.builtin.copy:
+    src: zshrc.d/aliases.zsh
+    dest: /home/ikaros/.zshrc.d/aliases.zsh
+    mode: "0644"
+  become: false
+
+- name: Deploy git.zsh
+  ansible.builtin.copy:
+    src: zshrc.d/git.zsh
+    dest: /home/ikaros/.zshrc.d/git.zsh
+    mode: "0644"
+  become: false
+
+- name: Deploy docker.zsh
+  ansible.builtin.copy:
+    src: zshrc.d/docker.zsh
+    dest: /home/ikaros/.zshrc.d/docker.zsh
+    mode: "0644"
+  become: false
+
+- name: Deploy autosuggestions.zsh
+  ansible.builtin.copy:
+    src: zshrc.d/autosuggestions.zsh
+    dest: /home/ikaros/.zshrc.d/autosuggestions.zsh
+    mode: "0644"
+  become: false
+
+# ── 5. Clean up ble.sh artifacts ────────────────────────────────────────────
+
+- name: Remove ble.sh directory
+  ansible.builtin.file:
+    path: /home/ikaros/.local/share/blesh
+    state: absent
+  become: false
+
+- name: Remove ble.sh tarball from /tmp
+  ansible.builtin.file:
+    path: /tmp/ble-0.4.0-devel3.tar.xz
+    state: absent
+  become: false
+
+# ── 6. Clean up .bashrc managed blocks ──────────────────────────────────────
+
+- name: Remove ble.sh init block from ~/.bashrc
+  ansible.builtin.blockinfile:
+    path: /home/ikaros/.bashrc
+    marker: "# {mark} ANSIBLE MANAGED BLOCK — ble.sh init"
+    state: absent
+  become: false
+
+- name: Remove bashrc.d sourcing block from ~/.bashrc
+  ansible.builtin.blockinfile:
+    path: /home/ikaros/.bashrc
+    marker: "# {mark} ANSIBLE MANAGED BLOCK — bashrc.d"
+    state: absent
+  become: false
+
+- name: Remove ble.sh attach block from ~/.bashrc
+  ansible.builtin.blockinfile:
+    path: /home/ikaros/.bashrc
+    marker: "# {mark} ANSIBLE MANAGED BLOCK — ble.sh attach"
+    state: absent
+  become: false
+
+# ── 7. Clean up old bashrc.d directory ───────────────────────────────────────
+
+- name: Remove ~/.bashrc.d directory
+  ansible.builtin.file:
+    path: /home/ikaros/.bashrc.d
+    state: absent
+  become: false

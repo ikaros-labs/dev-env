@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: coredns
+  author: ikaros-iac
+  description: Deploy CoreDNS via Docker Compose managed by a systemd unit
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble  # 24.04 LTS
+
+dependencies: []

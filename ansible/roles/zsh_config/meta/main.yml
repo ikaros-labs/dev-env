@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: zsh_config
+  author: ikaros-iac
+  description: Interactive zsh configuration — completion, history, and curated aliases
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+
+dependencies: []

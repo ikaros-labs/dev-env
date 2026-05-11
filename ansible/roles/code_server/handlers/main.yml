@@ -1,0 +1,6 @@
+---
+- name: Restart code-server
+  ansible.builtin.systemd:
+    name: code-server@ikaros
+    state: restarted
+  become: true

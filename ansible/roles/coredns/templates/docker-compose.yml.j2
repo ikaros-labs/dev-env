@@ -1,0 +1,11 @@
+services:
+  coredns:
+    image: coredns/coredns:1.14.3
+    restart: unless-stopped
+    ports:
+      - "{{ ansible_host }}:53:53/udp"
+      - "{{ ansible_host }}:53:53/tcp"
+    volumes:
+      - ./Corefile:/etc/coredns/Corefile:ro
+      - ./zones:/etc/coredns/zones:ro
+    command: -conf /etc/coredns/Corefile

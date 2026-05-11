@@ -1,0 +1,15 @@
+$ORIGIN demo.nikmel.dev.
+$TTL 60
+
+@   IN SOA ns1.demo.nikmel.dev. hostmaster.nikmel.dev. (
+    2026043001 ; serial
+    3600       ; refresh
+    900        ; retry
+    86400      ; expire
+    60         ; minimum TTL
+)
+
+@   IN NS ns1.demo.nikmel.dev.
+ns1 IN A 127.0.0.1
+
+*   IN CNAME dev-env.oryx-capella.ts.net.

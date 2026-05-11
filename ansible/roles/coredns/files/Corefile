@@ -1,0 +1,44 @@
+demo.nikmel.dev {
+    file /etc/coredns/zones/demo.nikmel.dev
+    log
+    errors
+}
+
+agents-new.nikmel.dev {
+    template IN ANY {
+        answer "{{ .Name }} 60 IN CNAME dev-env.oryx-capella.ts.net."
+    }
+    log
+    errors
+}
+
+agents.nikmel.dev {
+    template IN ANY {
+        answer "{{ .Name }} 60 IN CNAME dev-env-old.oryx-capella.ts.net."
+    }
+    log
+    errors
+}
+
+code.nikmel.dev {
+    template IN ANY {
+        answer "{{ .Name }} 60 IN CNAME dev-env.oryx-capella.ts.net."
+    }
+    log
+    errors
+}
+
+finance.nikmel.dev {
+    template IN ANY {
+        answer "{{ .Name }} 60 IN CNAME dev-env.oryx-capella.ts.net."
+    }
+    log
+    errors
+}
+
+. {
+    forward . 1.1.1.1 8.8.8.8
+    log
+    errors
+    cache 300
+}

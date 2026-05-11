@@ -1,0 +1,451 @@
+# CLAUDE.md — IaC Agent Reference
+
+This file is the authoritative reference for any agent (or human) working in
+this repository.  **Read it before making changes.**  When a rule changes,
+update this file in the same commit.
+
+---
+
+## Project status: experimental
+
+This project is in an **experimental / bootstrapping phase**.  Stability is
+not guaranteed and is not the goal right now.
+
+- **Breaking changes are fine** — don't hesitate to make them.
+- **Resources can and should be recreated from scratch** when needed.
+  `terraform destroy && terraform apply` is a normal workflow here, not a
+  last resort.
+- This repo provisions a **dev environment only** — no production workloads.
+- **Server state is disposable** — if something is easier to fix by
+  reprovisioning than by debugging in place, reprovision.
+
+This note should be removed (or replaced with a phased rollout policy) once
+the first real workload is deployed and a human is relying on the
+infrastructure.
+
+---
+
+## Table of contents
+
+1. [Bootstrap flow](#bootstrap-flow)
+2. [Rules and rationale](#rules-and-rationale)
+3. [Conventions](#conventions)
+4. [Known-incomplete areas](#known-incomplete-areas)
+5. [Future work (out of scope for initial pass)](#future-work-out-of-scope-for-initial-pass)
+6. [Exceptions log](#exceptions-log)
+
+---
+
+## Bootstrap flow
+
+The "chicken-and-egg" problem: a new server has no public SSH access (the
+Hetzner firewall denies all inbound), so Ansible cannot reach it the
+traditional way.  This is solved by Tailscale + cloud-init:
+
+```
+Terraform apply
+  │
+  ├─► hcloud_firewall  (deny all inbound)
+  │
+  └─► hcloud_server.servers  (for_each over var.servers)
+        │  Creates: dev-env (role=dev)
+        │  user_data = templatefile(cloud-init.yaml.tftpl, {
+        │    tailscale_auth_key, ikaros_hashed_password,
+        │    tailscale_role_tag  (e.g. "tag:dev")
+        │  })
+        │
+        ▼ (server boots, cloud-init runs ~30–60 s)
+        │
+        ├─► Create user ikaros (sudo group, hashed password)
+        ├─► Write /etc/ssh/sshd_config.d/99-hardening.conf
+        ├─► Lock root password (passwd -l root)
+        ├─► Install Tailscale via apt repository
+        ├─► tailscale up --ssh --advertise-tags=tag:server,tag:<role> --auth-key=...
+        └─► systemctl restart ssh
+
+        Server joins tailnet via NAT traversal / DERP.
+        No inbound port needed.
+
+scripts/gen-inventory.sh (run after terraform apply)
+  │
+  └─► tailscale status --json
+        Filter peers with tag:server.
+        Map tag:dev → group "dev".
+        ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
+        Writes ansible/inventory/hosts.yml.
+
+Ansible (from a machine on the same tailnet)
+  │
+  └─► ansible-playbook site.yml
+        Connects via Tailscale IP as ikaros.
+        All servers:  common, unattended_upgrades, docker, github_cli,
+                      node_tooling, zsh_config.
+        Dev servers:  claude_code, playwright, ansible_tool, terraform,
+                      caddy, code_server, coredns.
+```
+
+**Scope boundary** — cloud-init owns *identity and access* only.  Do not use
+cloud-init for package installation, service configuration, or anything that
+needs to be re-runnable.  Those belong in Ansible roles.
+
+---
+
+## Rules and rationale
+
+### User: ikaros (non-root)
+
+**Rule**: All managed servers have a non-root user named `ikaros` in the
+`sudo` group.
+
+**Why**: Running application workloads and Ansible as root is a security
+anti-pattern.  A named, non-root user provides an audit trail and limits
+blast radius.
+
+**Where**: `terraform/cloud-init.yaml.tftpl` — `users:` block.
+
+---
+
+### SSH authentication: Tailscale SSH only
+
+**Rule**: All SSH access goes through Tailscale SSH (`tailscale up --ssh`).
+No SSH public keys are placed in `authorized_keys`.  Password authentication
+over SSH is disabled.
+
+**Why**: The Hetzner firewall blocks all inbound traffic, so standard SSH
+port 22 is unreachable from the internet regardless.  Tailscale SSH
+authenticates using Tailscale identity (WireGuard + ACL policy), making a
+separate `authorized_keys` file redundant.  Removing the SSH public key
+eliminates one secret to generate, store, and rotate.
+
+**Where**: `tailscale up --ssh` in `terraform/cloud-init.yaml.tftpl` —
+`runcmd:` block.  Password auth is disabled by
+`/etc/ssh/sshd_config.d/99-hardening.conf` (`PasswordAuthentication no`).
+
+---
+
+### Sudo requires a password (no NOPASSWD)
+
+**Rule**: `ikaros` can sudo but must provide a password.  `NOPASSWD` must
+not be used.
+
+**Why**: If an attacker gains code execution as `ikaros` (e.g., via a
+compromised service), they cannot silently escalate to root without knowing
+the password.  The sudo password is a meaningful second factor.
+
+**Implication**: The sudo password is stored in an Ansible Vault-encrypted
+file (`inventory/group_vars/all/vault.yml`) and supplied automatically.  The vault
+password file (`~/.ansible_vault_pass`) is configured in `ansible.cfg`.
+
+**Where**: The sudo group membership in cloud-init inherits Ubuntu's default
+`%sudo ALL=(ALL:ALL) ALL` rule (password required).  The hashed password is
+set via `passwd:` in cloud-init.
+
+---
+
+### Hashed password supplied as a sensitive Terraform variable
+
+**Rule**: The ikaros sudo password is provided as a SHA-512 hash (e.g.
+from `mkpasswd -m sha-512`), never as plaintext.
+
+**Why**: Terraform state, plan output, and logs may be visible to other
+tools.  A hash limits exposure.  Marked `sensitive = true` in the variable
+definition.
+
+**Where**: `terraform/variables.tf` — `ikaros_hashed_password` variable;
+`terraform/main.tf` — `sensitive(templatefile(...))` wrapper.
+
+---
+
+### SSH hardening drop-in
+
+**Rule**: Every server gets `/etc/ssh/sshd_config.d/99-hardening.conf` with:
+```
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+```
+
+**Why**: Defence in depth.  Even if a future package or user accidentally
+unlocks password authentication system-wide, this drop-in wins
+(alphabetically last in `sshd_config.d/`).
+
+**Where**: `terraform/cloud-init.yaml.tftpl`.
+
+---
+
+### Root password locked
+
+**Rule**: `passwd -l root` runs during cloud-init.
+
+**Why**: Belt-and-suspenders with `PermitRootLogin no`.  A locked password
+prevents local console su/sudo to root with a blank password if sshd is
+somehow bypassed.
+
+**Where**: `terraform/cloud-init.yaml.tftpl` — `runcmd:` block.
+
+---
+
+### Hetzner firewall: deny all inbound
+
+**Rule**: Every server is attached to a Hetzner Cloud firewall with no
+inbound rules (= deny all).  No host-level firewall (UFW/nftables) is used.
+
+**Why**: The Hetzner cloud firewall is enforced at the hypervisor/network
+level before traffic reaches the VM — simpler and more robust than a
+host-level firewall.  Tailscale traffic arrives through `tailscale0` (a
+WireGuard interface) which is already inside the VM and bypasses the Hetzner
+firewall entirely.  A host-level firewall would duplicate this logic
+unnecessarily.
+
+**Where**: `terraform/main.tf` — `hcloud_firewall.main` resource (no rules).
+
+---
+
+### Tailscale for all connectivity
+
+**Rule**: All SSH and service access goes through Tailscale.  No public
+ports are opened.
+
+**Why**: Tailscale provides mutual authentication (WireGuard + Tailscale
+identity), encrypted transit, and NAT traversal without exposing any
+listening port to the internet.
+
+**Auth key spec**: Ephemeral, pre-authorized, reusable, tagged `tag:server`.
+- *Ephemeral*: the tailnet device entry is automatically cleaned up when the
+  server is destroyed.
+- *Pre-authorized*: no manual approval step needed.
+- *Reusable*: allows key reuse if additional servers are added.
+  The key still expires at its configured TTL.
+- *tag:server*: applies the ACL policy in `tailscale/acl.hujson`.
+
+**Where**: `terraform/cloud-init.yaml.tftpl` — `runcmd:` block.
+
+---
+
+### Unattended security upgrades with auto-reboot
+
+**Rule**: Every server runs `unattended-upgrades` with `Automatic-Reboot`
+enabled and `Automatic-Reboot-Time "03:00"` (UTC).
+
+**Why**: The default Ubuntu unattended-upgrades configuration never reboots,
+which means kernel security patches are not applied until the next manual
+reboot.  That defeats the purpose of unattended upgrades.
+
+**Maintenance window**: 03:00–04:00 UTC (next apt run after 03:00).
+`Automatic-Reboot-WithUsers "false"` means the server reboots even if
+sessions are open — expected behaviour for server infrastructure.
+
+**Where**: `ansible/roles/unattended_upgrades/`.
+
+---
+
+### Hetzner automated backups
+
+**Rule**: `backups = true` on every `hcloud_server` resource.
+
+**Why**: Hetzner automated backups provide a point-in-time recovery option
+for ~20% of the server cost.  Opt-out requires an explicit inline comment
+explaining why.
+
+**Where**: `terraform/main.tf` — `hcloud_server.servers`.
+
+---
+
+### Labelling every Hetzner resource
+
+**Rule**: Every `hcloud_*` resource gets labels:
+```hcl
+labels = merge(local.common_labels, { role = "<role>" })
+```
+Where `local.common_labels` is:
+```hcl
+{
+  environment  = var.environment
+  "managed-by" = "terraform"
+}
+```
+
+**Why**: Labels enable cost attribution, resource queries, and automation
+(e.g. "restart all servers with role=web").  `managed-by=terraform` prevents
+accidental manual changes going unnoticed.
+
+**Labelling convention**:
+| Label | Values | Notes |
+|-------|--------|-------|
+| `environment` | `dev` (default), user-configurable | Set via variable |
+| `managed-by` | `terraform` | Always `terraform` in this repo |
+| `role` | `dev`, `firewall`, … | Per-resource |
+
+**Where**: `terraform/main.tf` — `locals` block + each resource.
+
+---
+
+### Ansible idempotency
+
+**Rule**: Every Ansible role must be idempotent.  Re-running a playbook
+against a converged host must produce zero changes.
+
+**Why**: Non-idempotent roles make re-runs risky and prevent using playbook
+runs as a convergence health check.
+
+**How to verify**:
+```bash
+ansible-playbook playbooks/site.yml
+# Run twice; second run must show changed=0.
+```
+
+---
+
+### Dynamic Ansible inventory from Tailscale status
+
+**Rule**: The Ansible inventory (`ansible/inventory/hosts.yml`) is generated
+from `tailscale status --json`.  It is gitignored and must never be
+hand-maintained.
+
+**Why**: Tailscale is the actual connectivity layer; it is the authoritative
+source of truth for which servers are reachable and under what address.
+Using Terraform outputs caused hostname drift when a Tailscale device was
+renamed due to a name collision.
+
+**How**: Run `scripts/gen-inventory.sh` after every `terraform apply` or
+whenever the tailnet topology changes.  Requires `tailscale` in PATH and
+that the machine running the script is on the same tailnet.
+
+**Inventory source**: Peers tagged `tag:server`.
+**Group mapping**: `tag:dev` → `dev`.
+**`ansible_host`**: Tailscale IP (100.x.x.x) — no MagicDNS dependency.
+
+**Provisioning**: Role tags are advertised by `cloud-init.yaml.tftpl` via
+`tailscale up --advertise-tags=tag:server,tag:<role>`.  To apply tags to an
+already-running server without reprovisioning, re-run `tailscale up` on the
+server with the correct `--advertise-tags` value.
+
+---
+
+### Secret management
+
+**Rule**: Secrets are managed differently depending on whether they are
+consumed by Terraform or Ansible.
+
+**Terraform secrets** (`hcloud_token`, `tailscale_auth_key`,
+`ikaros_hashed_password`) are passed via:
+- `terraform/terraform.tfvars` (gitignored), **or**
+- `TF_VAR_<name>` environment variables.
+
+`terraform.tfvars` must never be committed.  See `.gitignore`.
+
+**Where**: `terraform/terraform.tfvars.example` (template, tracked).
+
+**Ansible secrets** (`ansible_become_pass`, `caddy_cf_api_token`) are stored
+in Ansible Vault-encrypted files:
+- `ansible/inventory/group_vars/all/vault.yml` — secrets shared across all hosts
+  (currently: `ansible_become_pass`).
+- `ansible/inventory/group_vars/dev/vault.yml` — secrets scoped to dev hosts
+  (currently: `caddy_cf_api_token`).
+
+The vault password is read from `~/.ansible_vault_pass` (gitignored), configured
+via `vault_password_file` in `ansible/ansible.cfg`.
+
+**To edit a vault file**:
+```bash
+cd ansible/
+ansible-vault edit inventory/group_vars/all/vault.yml
+```
+
+---
+
+## Conventions
+
+### File naming
+
+| Area | Convention | Example |
+|------|-----------|---------|
+| Terraform | `snake_case.tf` | `main.tf`, `variables.tf` |
+| Ansible roles | `snake_case` directory | `unattended_upgrades/` |
+| Ansible tasks | `snake_case.yml` | `tasks/main.yml` |
+| Cloud-init template | `<name>.yaml.tftpl` | `cloud-init.yaml.tftpl` |
+| Scripts | `kebab-case.sh` | `gen-inventory.sh` |
+
+### Role structure
+
+Every Ansible role has at minimum:
+```
+roles/<name>/
+  tasks/main.yml    # Required
+  meta/main.yml     # Required (galaxy_info + dependencies)
+  handlers/         # If the role has handlers
+  files/            # Static files to copy
+  templates/        # Jinja2 templates
+```
+
+### Terraform resource naming
+
+- Use descriptive names, not generic ones.
+- Single-instance resources: use a noun (`main` for the firewall).
+- Multi-instance resources use `for_each`: `hcloud_server.servers` iterates
+  over `var.servers`, keyed by server name (default: `dev-env`).
+
+---
+
+## Known-incomplete areas
+
+### 1. Local Terraform state
+
+**Status**: Terraform uses a local `terraform.tfstate` file (default backend).
+
+**Risk**: Local state is lost if the operator's machine is lost; it cannot
+be shared between contributors; it provides no locking, so concurrent
+applies would corrupt it.
+
+**Revisit when**: A second contributor joins or deploy access needs to be
+shared.
+
+**Action required**: Migrate to a remote backend (e.g. Hetzner Object
+Storage with S3-compatible backend, or Terraform Cloud).  See the
+[Terraform backend docs](https://developer.hashicorp.com/terraform/language/settings/backends/configuration).
+
+---
+
+### 2. Secret management
+
+**Status**: Ansible secrets are stored in Ansible Vault-encrypted
+`group_vars/` files (`ansible_become_pass`, `caddy_cf_api_token`).  Terraform
+secrets are in a gitignored `terraform.tfvars` file or environment variables.
+Terraform state may still contain sensitive values.
+
+**Risk**: Terraform state can hold sensitive values even when variables are
+marked `sensitive`.
+
+**Revisit when**: Adding a second contributor, or setting up any form of
+CI/CD pipeline.
+
+**Action required**: Consider a secrets backend for Terraform state
+encryption — options include HashiCorp Vault, AWS Secrets Manager, Infisical,
+or 1Password Secrets Automation.
+
+---
+
+## Future work (out of scope for initial pass)
+
+These are deliberately deferred.  When tackling one, create a plan, update
+this file, and remove the item from this list.
+
+| Item | Notes |
+|------|-------|
+| Remote Terraform state backend | Blocker for second contributor |
+| Secret management | Terraform-side secrets manager integration |
+| Host-level firewall (UFW/nftables) | Not needed while Hetzner firewall is sufficient |
+| Time sync configuration | Ubuntu 24.04 ships with systemd-timesyncd (good defaults) |
+| CI/CD | GitHub Actions / Gitea Actions for plan + apply |
+| Stale Tailscale device cleanup | Auth keys are non-ephemeral (ephemeral is paid/limited). Recreating servers leaves orphaned device entries in the tailnet. Fix: `scripts/cleanup-tailnet.sh` using the Tailscale management API to delete devices with `tag:server` but no role tag — those are reliably stale since new servers always join with both tags. Needs a Tailscale OAuth API key (separate from the auth key). |
+
+---
+
+## Exceptions log
+
+Any deviation from the rules above must be recorded here with: date, file,
+line, rule deviated from, reason.
+
+| Date | File:line | Rule | Reason |
+|------|-----------|------|--------|
+| 2026-04-29 | `terraform/main.tf` | SSH authentication: Tailscale SSH only | `hcloud_ssh_key.placeholder` registered in Hetzner solely to suppress new-server credential emails. Private key was generated once and immediately discarded — never stored. `cloud-init` removes `/root/.ssh` on first boot before any service starts. |

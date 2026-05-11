@@ -1,0 +1,33 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored — never commit it.
+#
+# Alternatively, export each variable as TF_VAR_<name>=<value> in your shell.
+
+# --- Required ---------------------------------------------------------------
+
+# Hetzner Cloud API token.
+# Create at: https://console.hetzner.cloud/ → project → Security → API Tokens
+# Needs Read+Write permissions.
+hcloud_token = "your-hetzner-cloud-api-token"
+
+# Tailscale pre-authorized ephemeral auth key tagged with tag:server.
+# Generate at: https://login.tailscale.com/admin/settings/keys
+#   Reusable: on  |  Ephemeral: on  |  Pre-authorized: on  |  Tags: tag:server
+# Reusable: off (only one server by default; turn on if you add more).
+tailscale_auth_key = "tskey-auth-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# SHA-512 hashed password for the ikaros user (needed for sudo).
+# Generate with: mkpasswd -m sha-512
+# Example output (replace with your own): $6$rounds=4096$salt$hash...
+ikaros_hashed_password = "$6$rounds=4096$yoursalt$yourhashgoeshere..."
+
+# --- Optional (defaults shown) ----------------------------------------------
+
+environment     = "dev"
+server_location = "fsn1"   # fsn1 | nbg1 | hel1 | ash | hil
+server_type     = "cx23"   # see: hcloud server-type list
+
+# Per-server overrides (optional — default is a single dev-env server).
+# servers = {
+#   "dev-env" = { role = "dev", server_type = "cx32" }
+# }

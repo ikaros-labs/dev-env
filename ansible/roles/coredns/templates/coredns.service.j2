@@ -1,0 +1,17 @@
+[Unit]
+Description=CoreDNS (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/coredns
+ExecStart=/usr/bin/docker compose up --wait --remove-orphans
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

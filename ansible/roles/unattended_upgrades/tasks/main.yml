@@ -1,0 +1,42 @@
+---
+# unattended_upgrades — ensure security patches are applied automatically
+# and the server reboots during the defined maintenance window (03:00–04:00 UTC).
+#
+# Idempotency: copy + template modules are idempotent; the service task is
+# a no-op if the service is already in the desired state.
+
+- name: Ensure unattended-upgrades packages are installed
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+    update_cache: true
+  become: true
+
+- name: Deploy 50unattended-upgrades configuration
+  ansible.builtin.copy:
+    src: 50unattended-upgrades
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart unattended-upgrades
+
+- name: Deploy 20auto-upgrades configuration
+  ansible.builtin.copy:
+    src: 20auto-upgrades
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart unattended-upgrades
+
+- name: Ensure unattended-upgrades service is enabled and running
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    enabled: true
+    state: started
+  become: true

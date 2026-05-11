@@ -1,0 +1,17 @@
+services:
+  caddy:
+    build: .
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sites.d:/etc/caddy/sites.d:ro
+      - ./demo-sites.d:/etc/caddy/demo-sites.d:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file: .env
+
+volumes:
+  caddy_data:
+  caddy_config:

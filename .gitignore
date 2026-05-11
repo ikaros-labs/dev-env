@@ -1,0 +1,83 @@
+# =============================================================================
+# Terraform
+# =============================================================================
+
+# Local state files — never commit; migrate to remote backend before
+# adding a second contributor (see CLAUDE.md "Known-incomplete areas").
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Variable files often contain secrets.
+# *.tfvars is ignored; *.example.tfvars is tracked (negation below).
+terraform.tfvars
+*.tfvars
+!*.example.tfvars
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files (local dev overrides, should not be shared)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# =============================================================================
+# Ansible
+# =============================================================================
+
+# Generated inventory (sourced from Terraform outputs via gen-inventory.sh)
+ansible/inventory/hosts.yml
+
+# Retry files from failed playbook runs
+*.retry
+
+# Vault password files
+.vault_pass
+vault_pass.txt
+*.vaultpass
+
+# Ansible vault-encrypted files (tracked intentionally; exclude plaintext copies)
+# Adjust pattern if your convention differs.
+**/vault_vars.yml.plain
+
+# =============================================================================
+# SSH keys
+# =============================================================================
+*.pem
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+id_ecdsa
+id_ecdsa.pub
+known_hosts
+
+# =============================================================================
+# Cloud-init
+# =============================================================================
+# Rendered cloud-init YAML (contains secrets after templatefile() substitution)
+*.rendered.yaml
+cloud-init.rendered.*
+
+# =============================================================================
+# OS / editor artefacts
+# =============================================================================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# =============================================================================
+# Logs and temp files
+# =============================================================================
+*.log
+tmp/
+.tmp/

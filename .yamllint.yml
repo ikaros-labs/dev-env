@@ -1,0 +1,22 @@
+---
+extends: default
+
+rules:
+  # 120 chars is reasonable for Ansible tasks with long module args.
+  line-length:
+    max: 120
+    level: warning
+
+  # Allow both "yes/no" and "true/false" — Ansible uses both.
+  truthy:
+    allowed-values: ["true", "false", "yes", "no"]
+    check-keys: false
+
+  # Comments after code need a space.
+  comments:
+    min-spaces-before-comment: 1
+    require-starting-space: true
+
+  # Don't require document-start marker in every file.
+  document-start:
+    present: false

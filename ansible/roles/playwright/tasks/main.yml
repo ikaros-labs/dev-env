@@ -1,0 +1,33 @@
+---
+- name: Install Playwright CLI globally via npm
+  ansible.builtin.command:
+    cmd: npm install -g playwright
+    creates: /usr/bin/playwright
+  become: true
+
+- name: Install Playwright browser OS-level dependencies
+  ansible.builtin.command:
+    cmd: playwright install-deps chromium
+  become: true
+  changed_when: false
+
+- name: Install Playwright Chromium browser for ikaros user
+  ansible.builtin.command:
+    cmd: playwright install chromium
+  become: true
+  become_user: ikaros
+  changed_when: false
+
+- name: Install Playwright CLI for AI agents globally via npm
+  ansible.builtin.command:
+    cmd: npm install -g @playwright/cli@latest
+    creates: /usr/bin/playwright-cli
+  become: true
+
+- name: Install Playwright skills for ikaros user
+  ansible.builtin.command:
+    cmd: playwright-cli install --skills
+  become: true
+  become_user: ikaros
+  changed_when: false
+

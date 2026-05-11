@@ -1,0 +1,61 @@
+#cloud-config
+# ---------------------------------------------------------------------------
+# Identity & access bootstrap — one-shot, runs on first boot only.
+# This file is rendered by Terraform's templatefile() and injected as
+# user_data.  It is marked sensitive in main.tf so it does not appear in
+# plan/apply output.
+#
+# Scope: user creation, sudo, sshd hardening, Tailscale join,
+#        root password lock.
+# Everything else belongs in Ansible.
+# ---------------------------------------------------------------------------
+
+# ---- User ------------------------------------------------------------------
+users:
+  - name: ikaros
+    groups: [sudo]
+    shell: /bin/bash
+    # lock_passwd: false allows the hashed password to be used for sudo.
+    # SSH access is via Tailscale SSH (tailscale up --ssh); no authorized_keys needed.
+    lock_passwd: false
+    # ikaros_hashed_password is a SHA-512 hash from `mkpasswd -m sha-512`.
+    # The $ chars in the hash are safe — Terraform only interpolates $${...}
+    # sequences, not bare $ signs.
+    passwd: '${ikaros_hashed_password}'
+
+# ---- SSH hardening ---------------------------------------------------------
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+
+# ---- Bootstrap commands ----------------------------------------------------
+# Commands run as root in order; each line is a separate shell invocation.
+runcmd:
+  # Remove the SSH key Hetzner injected for email suppression — private key was
+  # discarded at provisioning time, but we clean up the server side too.
+  - rm -rf /root/.ssh
+
+  # Lock root password — root login is also blocked by sshd, but belt + braces.
+  - passwd -l root
+
+  # Install Tailscale via official apt repository.
+  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list
+  - apt-get update -qq
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y tailscale
+
+  # Join the tailnet.
+  # --ssh              enables Tailscale SSH (no inbound port needed).
+  # --advertise-tags   tag:server enforces ACL policy; tailscale_role_tag
+  #                    (e.g. tag:dev) is read by gen-inventory.sh
+  #                    to assign the correct Ansible group.
+  # --auth-key         pre-authorized ephemeral key.
+  - tailscale up --ssh --advertise-tags=tag:server,${tailscale_role_tag} --auth-key='${tailscale_auth_key}'
+
+  # Restart SSH daemon to pick up the hardening drop-in.
+  - systemctl restart ssh
