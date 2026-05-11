@@ -31,5 +31,6 @@
     - role: ansible_tool
     - role: terraform
     - role: caddy
+    - role: expose_dev_server
     - role: code_server
     - role: coredns
