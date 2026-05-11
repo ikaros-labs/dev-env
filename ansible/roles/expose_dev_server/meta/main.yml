@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: expose_dev_server
+  author: ikaros-iac
+  description: Install the expose-dev-server Claude Code skill and CLI tools (dev-register, dev-unregister)
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble  # 24.04 LTS
+
+dependencies: []

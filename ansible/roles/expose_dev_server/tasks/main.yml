@@ -1,0 +1,76 @@
+---
+- name: Install at scheduler
+  ansible.builtin.apt:
+    name: at
+    state: present
+  become: true
+
+- name: Ensure atd is enabled and running
+  ansible.builtin.systemd:
+    name: atd
+    enabled: true
+    state: started
+  become: true
+
+- name: Clone expose-dev-server repository
+  ansible.builtin.git:
+    repo: https://github.com/ikaros-labs/expose-dev-server
+    dest: /home/ikaros/expose-dev-server
+    version: main
+    update: true
+  become: true
+  become_user: ikaros
+
+- name: Create ~/.claude/skills directory
+  ansible.builtin.file:
+    path: /home/ikaros/.claude/skills
+    state: directory
+    owner: ikaros
+    group: ikaros
+    mode: "0755"
+  become: true
+
+- name: Create ~/.local/bin directory
+  ansible.builtin.file:
+    path: /home/ikaros/.local/bin
+    state: directory
+    owner: ikaros
+    group: ikaros
+    mode: "0755"
+  become: true
+
+- name: Symlink expose-dev-server skill
+  ansible.builtin.file:
+    src: /home/ikaros/expose-dev-server/skills/expose-dev-server
+    dest: /home/ikaros/.claude/skills/expose-dev-server
+    state: link
+    owner: ikaros
+    group: ikaros
+  become: true
+
+- name: Symlink dev-register binary
+  ansible.builtin.file:
+    src: /home/ikaros/expose-dev-server/bin/dev-register
+    dest: /home/ikaros/.local/bin/dev-register
+    state: link
+    owner: ikaros
+    group: ikaros
+  become: true
+
+- name: Symlink dev-unregister binary
+  ansible.builtin.file:
+    src: /home/ikaros/expose-dev-server/bin/dev-unregister
+    dest: /home/ikaros/.local/bin/dev-unregister
+    state: link
+    owner: ikaros
+    group: ikaros
+  become: true
+
+- name: Deploy ~/.local/bin PATH fragment
+  ansible.builtin.copy:
+    src: zshrc.d/local-bin.zsh
+    dest: /home/ikaros/.zshrc.d/local-bin.zsh
+    owner: ikaros
+    group: ikaros
+    mode: "0644"
+  become: true
