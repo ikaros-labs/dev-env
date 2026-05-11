@@ -52,7 +52,6 @@ resource "hcloud_server" "servers" {
   user_data = sensitive(templatefile("${path.module}/cloud-init.yaml.tftpl", {
     tailscale_auth_key     = var.tailscale_auth_key
     ikaros_hashed_password = var.ikaros_hashed_password
-    tailscale_role_tag     = "tag:${each.value.role}"
   }))
 
   labels = merge(local.common_labels, { role = each.value.role })

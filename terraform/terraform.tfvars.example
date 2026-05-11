@@ -10,10 +10,9 @@
 # Needs Read+Write permissions.
 hcloud_token = "your-hetzner-cloud-api-token"
 
-# Tailscale pre-authorized ephemeral auth key tagged with tag:server.
+# Tailscale pre-authorized auth key tagged with tag:dev-env.
 # Generate at: https://login.tailscale.com/admin/settings/keys
-#   Reusable: on  |  Ephemeral: on  |  Pre-authorized: on  |  Tags: tag:server
-# Reusable: off (only one server by default; turn on if you add more).
+#   Reusable: on  |  Ephemeral: off  |  Pre-authorized: on  |  Tags: tag:dev-env
 tailscale_auth_key = "tskey-auth-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # SHA-512 hashed password for the ikaros user (needed for sudo).

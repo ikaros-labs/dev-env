@@ -21,8 +21,8 @@
     - role: node_tooling
     - role: zsh_config
 
-- name: Converge dev servers
-  hosts: dev
+- name: Converge dev-env servers
+  hosts: dev-env
   gather_facts: false
   roles:
     - role: claude_code

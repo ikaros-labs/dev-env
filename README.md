@@ -59,18 +59,18 @@ pre-commit --version
 
 ### Tailscale auth key
 
-You need an ephemeral, pre-authorized, single-use key tagged `tag:server`:
+You need a pre-authorized, reusable key tagged `tag:dev-env`:
 
 1. Go to <https://login.tailscale.com/admin/settings/keys>
 2. Click **Generate auth key**
 3. Set:
-   - **Reusable**: off
-   - **Ephemeral**: on
+   - **Reusable**: on
+   - **Ephemeral**: off
    - **Pre-authorized**: on
-   - **Tags**: `tag:server`
+   - **Tags**: `tag:dev-env`
 4. Copy the key — it starts with `tskey-auth-`.
 
-> **Note**: Tag owners for `tag:server` must be configured first.
+> **Note**: Tag owners for `tag:dev-env` must be configured first.
 > See `tailscale/acl.hujson` and apply it at
 > <https://login.tailscale.com/admin/acls>.
 
@@ -206,9 +206,8 @@ terraform destroy
 ```
 
 This removes the Hetzner server and firewall.  The Tailscale device entry
-is ephemeral and disappears automatically once the server is gone (within
-a few minutes, or immediately if you revoke it at
-<https://login.tailscale.com/admin/machines>).
+is **not** ephemeral — remove it manually at
+<https://login.tailscale.com/admin/machines> after destroying the server.
 
 ---
 
