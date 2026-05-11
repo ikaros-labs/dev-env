@@ -13,13 +13,16 @@ locals {
 
 # ---------------------------------------------------------------------------
 # SSH key — registered solely to suppress Hetzner new-server credential emails.
-# The corresponding private key was discarded at creation time and was never
-# stored. cloud-init removes /root/.ssh on first boot, so the key is gone
-# before any service starts.
+# Generated on the fly; the private key is never used. cloud-init removes
+# /root/.ssh on first boot, so the key is gone before any service starts.
 # ---------------------------------------------------------------------------
+resource "tls_private_key" "placeholder" {
+  algorithm = "ED25519"
+}
+
 resource "hcloud_ssh_key" "placeholder" {
   name       = "hetzner-email-suppressor"
-  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDp51JbJAOSTuHh47Ae7Q8Md309H/irYY2bKRCv44iz9 hetzner-email-suppressor"
+  public_key = tls_private_key.placeholder.public_key_openssh
   labels     = local.common_labels
 }
 

@@ -458,4 +458,4 @@ line, rule deviated from, reason.
 
 | Date | File:line | Rule | Reason |
 |------|-----------|------|--------|
-| 2026-04-29 | `terraform/main.tf` | SSH authentication: Tailscale SSH only | `hcloud_ssh_key.placeholder` registered in Hetzner solely to suppress new-server credential emails. Private key was generated once and immediately discarded — never stored. `cloud-init` removes `/root/.ssh` on first boot before any service starts. |
+| 2026-04-29 | `terraform/main.tf` | SSH authentication: Tailscale SSH only | `hcloud_ssh_key.placeholder` registered in Hetzner solely to suppress new-server credential emails. Key pair is generated on the fly via `tls_private_key`; the private key is never used. `cloud-init` removes `/root/.ssh` on first boot before any service starts. |
