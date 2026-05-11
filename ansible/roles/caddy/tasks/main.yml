@@ -16,12 +16,12 @@
     - /opt/caddy/sites.d
   become: true
 
-- name: Create demo-sites.d directory (ikaros-writable)
+- name: Create demo-sites.d directory ({{ ansible_user }}-writable)
   ansible.builtin.file:
     path: /opt/caddy/demo-sites.d
     state: directory
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0755"
   become: true
 

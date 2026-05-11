@@ -5,6 +5,11 @@ locals {
     environment  = var.environment
     "managed-by" = "terraform"
   }
+
+  # Effective username per server: per-server override wins, then global default.
+  server_username = {
+    for name, cfg in var.servers : name => coalesce(cfg.username, var.username)
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -50,8 +55,9 @@ resource "hcloud_server" "servers" {
   ssh_keys     = [hcloud_ssh_key.placeholder.id]
 
   user_data = sensitive(templatefile("${path.module}/cloud-init.yaml.tftpl", {
-    tailscale_auth_key     = var.tailscale_auth_key
-    ikaros_hashed_password = var.ikaros_hashed_password
+    tailscale_auth_key   = var.tailscale_auth_key
+    user_hashed_password = var.user_hashed_password
+    username             = local.server_username[each.key]
   }))
 
   labels = merge(local.common_labels, { role = each.value.role })

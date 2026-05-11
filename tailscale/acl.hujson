@@ -38,6 +38,8 @@
       "action": "accept",
       "src":    ["autogroup:member"],
       "dst":    ["tag:dev-env"],
+      // Must match var.username in Terraform (or the per-server override).
+      // Update here when the username changes — this file is applied manually.
       "users":  ["ikaros"]
     }
   ],

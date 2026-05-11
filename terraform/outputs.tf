@@ -7,8 +7,14 @@ output "servers" {
     for name, server in hcloud_server.servers : name => {
       hcloud_ipv4 = server.ipv4_address
       role        = var.servers[name].role
+      username    = local.server_username[name]
     }
   }
+}
+
+output "server_usernames" {
+  description = "Map of server name → Linux username, consumed by gen-inventory.sh"
+  value       = local.server_username
 }
 
 output "firewall_id" {

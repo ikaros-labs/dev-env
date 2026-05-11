@@ -15,62 +15,62 @@
 - name: Clone expose-dev-server repository
   ansible.builtin.git:
     repo: https://github.com/ikaros-labs/expose-dev-server
-    dest: /home/ikaros/expose-dev-server
+    dest: /home/{{ ansible_user }}/expose-dev-server
     version: main
     update: true
   become: true
-  become_user: ikaros
+  become_user: "{{ ansible_user }}"
 
 - name: Create ~/.claude/skills directory
   ansible.builtin.file:
-    path: /home/ikaros/.claude/skills
+    path: /home/{{ ansible_user }}/.claude/skills
     state: directory
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0755"
   become: true
 
 - name: Create ~/.local/bin directory
   ansible.builtin.file:
-    path: /home/ikaros/.local/bin
+    path: /home/{{ ansible_user }}/.local/bin
     state: directory
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0755"
   become: true
 
 - name: Symlink expose-dev-server skill
   ansible.builtin.file:
-    src: /home/ikaros/expose-dev-server/skills/expose-dev-server
-    dest: /home/ikaros/.claude/skills/expose-dev-server
+    src: /home/{{ ansible_user }}/expose-dev-server/skills/expose-dev-server
+    dest: /home/{{ ansible_user }}/.claude/skills/expose-dev-server
     state: link
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   become: true
 
 - name: Symlink dev-register binary
   ansible.builtin.file:
-    src: /home/ikaros/expose-dev-server/bin/dev-register
-    dest: /home/ikaros/.local/bin/dev-register
+    src: /home/{{ ansible_user }}/expose-dev-server/bin/dev-register
+    dest: /home/{{ ansible_user }}/.local/bin/dev-register
     state: link
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   become: true
 
 - name: Symlink dev-unregister binary
   ansible.builtin.file:
-    src: /home/ikaros/expose-dev-server/bin/dev-unregister
-    dest: /home/ikaros/.local/bin/dev-unregister
+    src: /home/{{ ansible_user }}/expose-dev-server/bin/dev-unregister
+    dest: /home/{{ ansible_user }}/.local/bin/dev-unregister
     state: link
-    owner: ikaros
-    group: ikaros
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   become: true
 
 - name: Deploy ~/.local/bin PATH fragment
   ansible.builtin.copy:
     src: zshrc.d/local-bin.zsh
-    dest: /home/ikaros/.zshrc.d/local-bin.zsh
-    owner: ikaros
-    group: ikaros
+    dest: /home/{{ ansible_user }}/.zshrc.d/local-bin.zsh
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: "0644"
   become: true

@@ -50,12 +50,12 @@ Terraform apply
   └─► hcloud_server.servers  (for_each over var.servers)
         │  Creates: dev-env (role=dev)
         │  user_data = templatefile(cloud-init.yaml.tftpl, {
-        │    tailscale_auth_key, ikaros_hashed_password
+        │    tailscale_auth_key, user_hashed_password, username
         │  })
         │
         ▼ (server boots, cloud-init runs ~30–60 s)
         │
-        ├─► Create user ikaros (sudo group, hashed password)
+        ├─► Create user (var.username, sudo group, hashed password)
         ├─► Write /etc/ssh/sshd_config.d/99-hardening.conf
         ├─► Lock root password (passwd -l root)
         ├─► Install Tailscale via apt repository
@@ -67,16 +67,18 @@ Terraform apply
 
 scripts/gen-inventory.sh (run after terraform apply)
   │
+  ├─► terraform output -json server_usernames (if state available)
   └─► tailscale status --json
         Filter peers with tag:dev-env.
         Map tag:dev-env → group "dev-env".
         ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
+        ansible_user = per-server username from Terraform output.
         Writes ansible/inventory/hosts.yml.
 
 Ansible (from a machine on the same tailnet)
   │
   └─► ansible-playbook site.yml
-        Connects via Tailscale IP as ikaros.
+        Connects via Tailscale IP as the configured user (ansible_user).
         All servers:  common, unattended_upgrades, docker, github_cli,
                       node_tooling, zsh_config.
         Dev servers:  claude_code, playwright, ansible_tool, terraform,
@@ -91,16 +93,23 @@ needs to be re-runnable.  Those belong in Ansible roles.
 
 ## Rules and rationale
 
-### User: ikaros (non-root)
+### User: configurable (default: ikaros)
 
-**Rule**: All managed servers have a non-root user named `ikaros` in the
-`sudo` group.
+**Rule**: All managed servers have a non-root user in the `sudo` group.
+The username is set via `var.username` (global default) or per-server via
+`var.servers[name].username`.  Default: `ikaros`.
 
 **Why**: Running application workloads and Ansible as root is a security
 anti-pattern.  A named, non-root user provides an audit trail and limits
-blast radius.
+blast radius.  Making the username configurable allows each user to set
+their own preferred name.
 
-**Where**: `terraform/cloud-init.yaml.tftpl` — `users:` block.
+**Where**: `terraform/variables.tf` — `username` variable;
+`terraform/cloud-init.yaml.tftpl` — `users:` block.
+
+**Tailscale ACL dependency**: The SSH rule in `tailscale/acl.hujson` lists
+allowed usernames.  When changing the username, update the `"users"` array
+in the ACL file and apply it at <https://login.tailscale.com/admin/acls>.
 
 ---
 
@@ -108,7 +117,8 @@ blast radius.
 
 **Rule**: All SSH access goes through Tailscale SSH (`tailscale up --ssh`).
 No SSH public keys are placed in `authorized_keys`.  Password authentication
-over SSH is disabled.
+over SSH is disabled.  The Tailscale ACL SSH rule in `tailscale/acl.hujson`
+must list any usernames used across servers.
 
 **Why**: The Hetzner firewall blocks all inbound traffic, so standard SSH
 port 22 is unreachable from the internet regardless.  Tailscale SSH
@@ -124,10 +134,10 @@ eliminates one secret to generate, store, and rotate.
 
 ### Sudo requires a password (no NOPASSWD)
 
-**Rule**: `ikaros` can sudo but must provide a password.  `NOPASSWD` must
-not be used.
+**Rule**: The configured user can sudo but must provide a password.
+`NOPASSWD` must not be used.
 
-**Why**: If an attacker gains code execution as `ikaros` (e.g., via a
+**Why**: If an attacker gains code execution as the server user (e.g., via a
 compromised service), they cannot silently escalate to root without knowing
 the password.  The sudo password is a meaningful second factor.
 
@@ -143,14 +153,14 @@ set via `passwd:` in cloud-init.
 
 ### Hashed password supplied as a sensitive Terraform variable
 
-**Rule**: The ikaros sudo password is provided as a SHA-512 hash (e.g.
-from `mkpasswd -m sha-512`), never as plaintext.
+**Rule**: The server user's sudo password is provided as a SHA-512 hash
+(e.g. from `mkpasswd -m sha-512`), never as plaintext.
 
 **Why**: Terraform state, plan output, and logs may be visible to other
 tools.  A hash limits exposure.  Marked `sensitive = true` in the variable
 definition.
 
-**Where**: `terraform/variables.tf` — `ikaros_hashed_password` variable;
+**Where**: `terraform/variables.tf` — `user_hashed_password` variable;
 `terraform/main.tf` — `sensitive(templatefile(...))` wrapper.
 
 ---
@@ -308,7 +318,10 @@ renamed due to a name collision.
 
 **How**: Run `scripts/gen-inventory.sh` after every `terraform apply` or
 whenever the tailnet topology changes.  Requires `tailscale` in PATH and
-that the machine running the script is on the same tailnet.
+that the machine running the script is on the same tailnet.  The script
+also reads `terraform output -json server_usernames` to set `ansible_user`
+per host (falls back to `$ANSIBLE_USER` or `ikaros` if Terraform state is
+unavailable).
 
 **Inventory source**: Peers tagged `tag:dev-env`.
 **Group mapping**: `tag:dev-env` → `dev-env`.
@@ -327,7 +340,7 @@ server with `--advertise-tags=tag:dev-env`.
 consumed by Terraform or Ansible.
 
 **Terraform secrets** (`hcloud_token`, `tailscale_auth_key`,
-`ikaros_hashed_password`) are passed via:
+`user_hashed_password`) are passed via:
 - `terraform/terraform.tfvars` (gitignored), **or**
 - `TF_VAR_<name>` environment variables.
 

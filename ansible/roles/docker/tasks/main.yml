@@ -43,9 +43,9 @@
     state: started
   become: true
 
-- name: Add ikaros to docker group
+- name: Add {{ ansible_user }} to docker group
   ansible.builtin.user:
-    name: ikaros
+    name: "{{ ansible_user }}"
     groups: docker
     append: true
   become: true

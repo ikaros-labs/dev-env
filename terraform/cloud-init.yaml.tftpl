@@ -12,16 +12,16 @@
 
 # ---- User ------------------------------------------------------------------
 users:
-  - name: ikaros
+  - name: ${username}
     groups: [sudo]
     shell: /bin/bash
     # lock_passwd: false allows the hashed password to be used for sudo.
     # SSH access is via Tailscale SSH (tailscale up --ssh); no authorized_keys needed.
     lock_passwd: false
-    # ikaros_hashed_password is a SHA-512 hash from `mkpasswd -m sha-512`.
+    # user_hashed_password is a SHA-512 hash from `mkpasswd -m sha-512`.
     # The $ chars in the hash are safe — Terraform only interpolates $${...}
     # sequences, not bare $ signs.
-    passwd: '${ikaros_hashed_password}'
+    passwd: '${user_hashed_password}'
 
 # ---- SSH hardening ---------------------------------------------------------
 write_files:
