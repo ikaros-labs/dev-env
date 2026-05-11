@@ -30,12 +30,6 @@ variable "user_hashed_password" {
   sensitive   = true
 }
 
-variable "environment" {
-  description = "Environment label applied to all Hetzner resources"
-  type        = string
-  default     = "dev"
-}
-
 variable "server_location" {
   description = "Hetzner Cloud datacenter location (e.g. fsn1, nbg1, hel1, ash, hil)"
   type        = string
