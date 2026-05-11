@@ -1,0 +1,61 @@
+---
+- name: Assert anthropic_api_key is set
+  ansible.builtin.assert:
+    that: anthropic_api_key is defined and anthropic_api_key | length > 0
+    fail_msg: "anthropic_api_key must be set (defined in inventory/group_vars/dev-env/vault.yml)"
+
+- name: Install bun system-wide
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://bun.sh/install | bash
+    creates: /usr/local/bin/bun
+  become: true
+  environment:
+    BUN_INSTALL: /usr/local
+
+- name: Clone agents-orchestrator repository
+  ansible.builtin.git:
+    repo: https://github.com/ikaros-labs/agents-orchestrator
+    dest: /home/{{ ansible_user }}/agents-orchestrator
+    version: main
+    update: true
+  become: true
+  become_user: "{{ ansible_user }}"
+  notify: Restart agents-orchestrator
+
+- name: Install agents-orchestrator dependencies
+  ansible.builtin.command:
+    cmd: /usr/local/bin/bun install --frozen-lockfile
+    chdir: /home/{{ ansible_user }}/agents-orchestrator
+  become: true
+  become_user: "{{ ansible_user }}"
+  changed_when: false
+
+- name: Deploy agents-orchestrator environment file
+  ansible.builtin.template:
+    src: .env.j2
+    dest: /home/{{ ansible_user }}/agents-orchestrator/.env
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  become: true
+  notify: Restart agents-orchestrator
+
+- name: Deploy agents-orchestrator systemd unit
+  ansible.builtin.template:
+    src: agents-orchestrator.service.j2
+    dest: /etc/systemd/system/agents-orchestrator.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart agents-orchestrator
+
+- name: Ensure agents-orchestrator service is enabled and running
+  ansible.builtin.systemd:
+    name: agents-orchestrator
+    enabled: true
+    state: started
+    daemon_reload: false
+  become: true
