@@ -51,11 +51,10 @@ runcmd:
 
   # Join the tailnet.
   # --ssh              enables Tailscale SSH (no inbound port needed).
-  # --advertise-tags   tag:server enforces ACL policy; tailscale_role_tag
-  #                    (e.g. tag:dev) is read by gen-inventory.sh
-  #                    to assign the correct Ansible group.
-  # --auth-key         pre-authorized ephemeral key.
-  - tailscale up --ssh --advertise-tags=tag:server,${tailscale_role_tag} --auth-key='${tailscale_auth_key}'
+  # --advertise-tags   tag:dev-env enforces ACL policy and is used by
+  #                    gen-inventory.sh to assign the correct Ansible group.
+  # --auth-key         pre-authorized key.
+  - tailscale up --ssh --advertise-tags=tag:dev-env --auth-key='${tailscale_auth_key}'
 
   # Restart SSH daemon to pick up the hardening drop-in.
   - systemctl restart ssh

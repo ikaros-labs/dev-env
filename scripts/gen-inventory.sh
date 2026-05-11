@@ -2,8 +2,8 @@
 # gen-inventory.sh — Generate ansible/inventory/hosts.yml from Tailscale status.
 #
 # Uses Tailscale as the source of truth for server connectivity:
-#   - Filters peers that carry tag:server.
-#   - Maps Ansible group from the role tag (tag:dev → dev).
+#   - Filters peers that carry tag:dev-env.
+#   - Maps tag:dev-env → Ansible group "dev-env".
 #   - Uses the actual Tailscale IP as ansible_host — no MagicDNS dependency,
 #     no hostname-collision problems.
 #
@@ -37,21 +37,17 @@ peers = list(status.get("Peer", {}).values())
 if self_node:
     peers.append(self_node)
 
-# Maps Tailscale role tag → Ansible inventory group name.
+# Maps Tailscale tag → Ansible inventory group name.
 ROLE_TAGS = {
-    "tag:dev": "dev",
+    "tag:dev-env": "dev-env",
 }
 
 groups = defaultdict(list)
 
 for peer in peers:
     tags = peer.get("Tags") or []
-    if "tag:server" not in tags:
-        continue
-
     group = next((ROLE_TAGS[t] for t in tags if t in ROLE_TAGS), None)
     if group is None:
-        print(f"WARNING: {peer['HostName']} has tag:server but no role tag — skipping", file=sys.stderr)
         continue
 
     hostname = peer["HostName"]

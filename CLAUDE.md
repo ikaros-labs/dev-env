@@ -50,8 +50,7 @@ Terraform apply
   └─► hcloud_server.servers  (for_each over var.servers)
         │  Creates: dev-env (role=dev)
         │  user_data = templatefile(cloud-init.yaml.tftpl, {
-        │    tailscale_auth_key, ikaros_hashed_password,
-        │    tailscale_role_tag  (e.g. "tag:dev")
+        │    tailscale_auth_key, ikaros_hashed_password
         │  })
         │
         ▼ (server boots, cloud-init runs ~30–60 s)
@@ -60,7 +59,7 @@ Terraform apply
         ├─► Write /etc/ssh/sshd_config.d/99-hardening.conf
         ├─► Lock root password (passwd -l root)
         ├─► Install Tailscale via apt repository
-        ├─► tailscale up --ssh --advertise-tags=tag:server,tag:<role> --auth-key=...
+        ├─► tailscale up --ssh --advertise-tags=tag:dev-env --auth-key=...
         └─► systemctl restart ssh
 
         Server joins tailnet via NAT traversal / DERP.
@@ -69,8 +68,8 @@ Terraform apply
 scripts/gen-inventory.sh (run after terraform apply)
   │
   └─► tailscale status --json
-        Filter peers with tag:server.
-        Map tag:dev → group "dev".
+        Filter peers with tag:dev-env.
+        Map tag:dev-env → group "dev-env".
         ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
         Writes ansible/inventory/hosts.yml.
 
@@ -210,13 +209,13 @@ ports are opened.
 identity), encrypted transit, and NAT traversal without exposing any
 listening port to the internet.
 
-**Auth key spec**: Ephemeral, pre-authorized, reusable, tagged `tag:server`.
-- *Ephemeral*: the tailnet device entry is automatically cleaned up when the
-  server is destroyed.
+**Auth key spec**: Pre-authorized, reusable, tagged `tag:dev-env`.
 - *Pre-authorized*: no manual approval step needed.
 - *Reusable*: allows key reuse if additional servers are added.
   The key still expires at its configured TTL.
-- *tag:server*: applies the ACL policy in `tailscale/acl.hujson`.
+- *tag:dev-env*: applies the ACL policy in `tailscale/acl.hujson`.
+- *Not ephemeral*: device entries persist after server destruction and must
+  be removed manually at <https://login.tailscale.com/admin/machines>.
 
 **Where**: `terraform/cloud-init.yaml.tftpl` — `runcmd:` block.
 
@@ -311,14 +310,14 @@ renamed due to a name collision.
 whenever the tailnet topology changes.  Requires `tailscale` in PATH and
 that the machine running the script is on the same tailnet.
 
-**Inventory source**: Peers tagged `tag:server`.
-**Group mapping**: `tag:dev` → `dev`.
+**Inventory source**: Peers tagged `tag:dev-env`.
+**Group mapping**: `tag:dev-env` → `dev-env`.
 **`ansible_host`**: Tailscale IP (100.x.x.x) — no MagicDNS dependency.
 
-**Provisioning**: Role tags are advertised by `cloud-init.yaml.tftpl` via
-`tailscale up --advertise-tags=tag:server,tag:<role>`.  To apply tags to an
+**Provisioning**: Tag is advertised by `cloud-init.yaml.tftpl` via
+`tailscale up --advertise-tags=tag:dev-env`.  To apply the tag to an
 already-running server without reprovisioning, re-run `tailscale up` on the
-server with the correct `--advertise-tags` value.
+server with `--advertise-tags=tag:dev-env`.
 
 ---
 
@@ -340,7 +339,7 @@ consumed by Terraform or Ansible.
 in Ansible Vault-encrypted files:
 - `ansible/inventory/group_vars/all/vault.yml` — secrets shared across all hosts
   (currently: `ansible_become_pass`).
-- `ansible/inventory/group_vars/dev/vault.yml` — secrets scoped to dev hosts
+- `ansible/inventory/group_vars/dev-env/vault.yml` — secrets scoped to dev-env hosts
   (currently: `caddy_cf_api_token`).
 
 The vault password is read from `~/.ansible_vault_pass` (gitignored), configured
@@ -437,7 +436,7 @@ this file, and remove the item from this list.
 | Host-level firewall (UFW/nftables) | Not needed while Hetzner firewall is sufficient |
 | Time sync configuration | Ubuntu 24.04 ships with systemd-timesyncd (good defaults) |
 | CI/CD | GitHub Actions / Gitea Actions for plan + apply |
-| Stale Tailscale device cleanup | Auth keys are non-ephemeral (ephemeral is paid/limited). Recreating servers leaves orphaned device entries in the tailnet. Fix: `scripts/cleanup-tailnet.sh` using the Tailscale management API to delete devices with `tag:server` but no role tag — those are reliably stale since new servers always join with both tags. Needs a Tailscale OAuth API key (separate from the auth key). |
+| Stale Tailscale device cleanup | Auth keys are intentionally non-ephemeral. Recreating servers leaves orphaned device entries in the tailnet. Fix: `scripts/cleanup-tailnet.sh` using the Tailscale management API to delete stale `tag:dev-env` devices. Needs a Tailscale OAuth API key (separate from the auth key). |
 
 ---
 

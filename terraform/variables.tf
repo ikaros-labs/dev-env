@@ -6,9 +6,9 @@ variable "hcloud_token" {
 
 variable "tailscale_auth_key" {
   description = <<-EOT
-    Tailscale pre-authorized ephemeral auth key tagged with tag:server.
+    Tailscale pre-authorized auth key tagged with tag:dev-env.
     Generate at https://login.tailscale.com/admin/settings/keys
-    (Reusable: on, Ephemeral: on, Pre-authorized: on, Tags: tag:server).
+    (Reusable: on, Ephemeral: off, Pre-authorized: on, Tags: tag:dev-env).
   EOT
   type        = string
   sensitive   = true
@@ -46,8 +46,7 @@ variable "servers" {
   description = <<-EOT
     Map of server name → config.  Each key becomes the hcloud_server name
     and Tailscale hostname.
-    role:        Hetzner label, Ansible inventory group, and Tailscale role tag
-                 (advertised as tag:<role> alongside tag:server).
+    role:        Hetzner label and Ansible inventory group name.
     server_type: Override the default var.server_type for this server (optional).
   EOT
   type = map(object({
