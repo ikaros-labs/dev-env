@@ -1,0 +1,17 @@
+---
+# Ansible collection dependencies for this project.
+#
+# Install (or refresh) into the project-local ./collections directory:
+#
+#     ansible-galaxy collection install -r requirements.yml
+#
+# The project-local path is configured via `collections_path` in ansible.cfg
+# and is searched BEFORE ~/.ansible/collections, so this pin wins over any
+# stale globally-installed copy on a contributor's machine.
+
+collections:
+  # Used by roles/git_config (community.general.git_config module).
+  # Pinned because older releases (e.g. 5.x) ship a yaml stdout-callback
+  # plugin that fails to import under Python 3.14.
+  - name: community.general
+    version: "12.6.0"

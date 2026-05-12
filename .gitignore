@@ -33,6 +33,9 @@ override.tf.json
 # Generated inventory (sourced from Terraform outputs via gen-inventory.sh)
 ansible/inventory/hosts.yml
 
+# Project-local Ansible collections (installed from requirements.yml)
+ansible/collections/
+
 # Retry files from failed playbook runs
 *.retry
 

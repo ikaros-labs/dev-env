@@ -165,6 +165,12 @@ changes server topology.
 ```bash
 cd ansible/
 
+# One-time (or whenever requirements.yml changes): install pinned
+# collections into the project-local ./collections directory. This is
+# searched before ~/.ansible/collections, so the pin wins over any stale
+# globally-installed copy.
+ansible-galaxy collection install -r requirements.yml
+
 # Secrets are decrypted automatically from Ansible Vault.
 # Ensure ~/.ansible_vault_pass exists (see CLAUDE.md for details).
 ansible-playbook playbooks/setup.yml
