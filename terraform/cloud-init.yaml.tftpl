@@ -36,8 +36,8 @@ write_files:
 # ---- Bootstrap commands ----------------------------------------------------
 # Commands run as root in order; each line is a separate shell invocation.
 runcmd:
-  # Remove the SSH key Hetzner injected for email suppression — private key was
-  # discarded at provisioning time, but we clean up the server side too.
+  # Remove the injected placeholder SSH key — private key was discarded at
+  # provisioning time; clean up the server side too.
   - rm -rf /root/.ssh
 
   # Lock root password — root login is also blocked by sshd, but belt + braces.

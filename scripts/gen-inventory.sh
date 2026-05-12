@@ -14,7 +14,12 @@
 # The generated file is gitignored (environment-specific).
 #
 # Usage:
-#   bash scripts/gen-inventory.sh
+#   bash scripts/gen-inventory.sh [--tf-dir|-d <path>]
+#
+#   --tf-dir / -d   Path to the Terraform root module to read server_usernames
+#                   from.  Defaults to ../terraform/hetzner relative to this
+#                   script.  Pass ../terraform/digitalocean (or an absolute path)
+#                   when managing DigitalOcean droplets.
 #
 # Requirements: tailscale (in PATH), python3 (in PATH)
 
@@ -22,9 +27,26 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INVENTORY_FILE="$SCRIPT_DIR/../ansible/hosts.yml"
-# Allow callers to override TF_DIR (useful when running from a git worktree
-# that doesn't have its own terraform.tfstate).
-TF_DIR="${TF_DIR:-$SCRIPT_DIR/../terraform}"
+# TF_DIR env var can override the default; --tf-dir/-d flag takes highest precedence.
+TF_DIR="${TF_DIR:-$SCRIPT_DIR/../terraform/hetzner}"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -d|--tf-dir)
+      TF_DIR="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      echo "Usage: $0 [--tf-dir|-d <terraform-dir>]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Resolve to absolute path (handles both relative and absolute input)
+TF_DIR="$(cd "$TF_DIR" && pwd)"
 
 echo "Reading Tailscale status..."
 
@@ -32,7 +54,7 @@ STATUS_JSON=$(tailscale status --json)
 
 # Attempt to read per-server usernames from Terraform output.
 if command -v terraform &>/dev/null && [ -f "$TF_DIR/terraform.tfstate" ]; then
-  echo "Reading usernames from Terraform state..."
+  echo "Reading usernames from Terraform state ($TF_DIR)..."
   USERNAME_JSON=$(terraform -chdir="$TF_DIR" output -json server_usernames 2>/dev/null || echo '{}')
 else
   USERNAME_JSON='{}'

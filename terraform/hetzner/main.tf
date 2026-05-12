@@ -56,7 +56,7 @@ resource "hcloud_server" "servers" {
   firewall_ids = [hcloud_firewall.main.id]
   ssh_keys     = [hcloud_ssh_key.placeholder.id]
 
-  user_data = sensitive(templatefile("${path.module}/cloud-init.yaml.tftpl", {
+  user_data = sensitive(templatefile("${path.module}/../cloud-init.yaml.tftpl", {
     tailscale_auth_key   = var.tailscale_auth_key
     user_hashed_password = var.user_hashed_password
     username             = local.server_username[each.key]
