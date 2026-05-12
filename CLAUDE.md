@@ -39,17 +39,17 @@ infrastructure.
 ## Bootstrap flow
 
 The "chicken-and-egg" problem: a new server has no public SSH access (the
-Hetzner firewall denies all inbound), so Ansible cannot reach it the
+cloud firewall denies all inbound), so Ansible cannot reach it the
 traditional way.  This is solved by Tailscale + cloud-init:
 
 ```
-Terraform apply
+Terraform apply  (terraform/hetzner/ or terraform/digitalocean/)
   │
-  ├─► hcloud_firewall  (deny all inbound)
+  ├─► hcloud_firewall / digitalocean_firewall  (deny all inbound)
   │
-  └─► hcloud_server.servers  (for_each over var.servers)
+  └─► hcloud_server.servers / digitalocean_droplet.servers  (for_each over var.servers)
         │  Creates: dev-env (role=dev)
-        │  user_data = templatefile(cloud-init.yaml.tftpl, {
+        │  user_data = templatefile(../cloud-init.yaml.tftpl, {
         │    tailscale_auth_key, user_hashed_password, username
         │  })
         │
@@ -65,7 +65,7 @@ Terraform apply
         Server joins tailnet via NAT traversal / DERP.
         No inbound port needed.
 
-scripts/gen-inventory.sh (run after terraform apply)
+scripts/gen-inventory.sh [--tf-dir terraform/hetzner|terraform/digitalocean]
   │
   ├─► terraform output -json server_usernames (if state available)
   └─► tailscale status --json
@@ -73,7 +73,7 @@ scripts/gen-inventory.sh (run after terraform apply)
         Map tag:dev-env → group "dev-env".
         ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
         ansible_user = per-server username from Terraform output.
-        Writes ansible/inventory/hosts.yml.
+        Writes ansible/hosts.yml.
 
 Ansible (from a machine on the same tailnet)
   │
@@ -104,7 +104,7 @@ anti-pattern.  A named, non-root user provides an audit trail and limits
 blast radius.  Making the username configurable allows each user to set
 their own preferred name.
 
-**Where**: `terraform/variables.tf` — `username` variable;
+**Where**: `terraform/hetzner/variables.tf` or `terraform/digitalocean/variables.tf` — `username` variable;
 `terraform/cloud-init.yaml.tftpl` — `users:` block.
 
 **Tailscale ACL dependency**: The SSH rule in `tailscale/acl.hujson` lists
@@ -120,7 +120,7 @@ No SSH public keys are placed in `authorized_keys`.  Password authentication
 over SSH is disabled.  The Tailscale ACL SSH rule in `tailscale/acl.hujson`
 must list any usernames used across servers.
 
-**Why**: The Hetzner firewall blocks all inbound traffic, so standard SSH
+**Why**: The cloud firewall blocks all inbound traffic, so standard SSH
 port 22 is unreachable from the internet regardless.  Tailscale SSH
 authenticates using Tailscale identity (WireGuard + ACL policy), making a
 separate `authorized_keys` file redundant.  Removing the SSH public key
@@ -160,8 +160,8 @@ set via `passwd:` in cloud-init.
 tools.  A hash limits exposure.  Marked `sensitive = true` in the variable
 definition.
 
-**Where**: `terraform/variables.tf` — `user_hashed_password` variable;
-`terraform/main.tf` — `sensitive(templatefile(...))` wrapper.
+**Where**: `terraform/{hetzner,digitalocean}/variables.tf` — `user_hashed_password` variable;
+`terraform/{hetzner,digitalocean}/main.tf` — `sensitive(templatefile(...))` wrapper.
 
 ---
 
@@ -194,19 +194,27 @@ somehow bypassed.
 
 ---
 
-### Hetzner firewall: deny all inbound
+### Cloud firewall: deny all inbound
 
-**Rule**: Every server is attached to a Hetzner Cloud firewall with no
-inbound rules (= deny all).  No host-level firewall (UFW/nftables) is used.
+**Rule**: Every server is attached to a cloud firewall with no inbound rules
+(= deny all).  No host-level firewall (UFW/nftables) is used.
 
-**Why**: The Hetzner cloud firewall is enforced at the hypervisor/network
-level before traffic reaches the VM — simpler and more robust than a
-host-level firewall.  Tailscale traffic arrives through `tailscale0` (a
-WireGuard interface) which is already inside the VM and bypasses the Hetzner
-firewall entirely.  A host-level firewall would duplicate this logic
-unnecessarily.
+**Why**: Cloud firewalls are enforced at the hypervisor/network level before
+traffic reaches the VM — simpler and more robust than a host-level firewall.
+Tailscale traffic arrives through `tailscale0` (a WireGuard interface) which
+is already inside the VM and bypasses the cloud firewall entirely.  A
+host-level firewall would duplicate this logic unnecessarily.
 
-**Where**: `terraform/main.tf` — `hcloud_firewall.main` resource (no rules).
+**Provider-specific behaviour**:
+- **Hetzner**: default-deny inbound when no rules are defined; outbound is
+  never filtered.  An empty `hcloud_firewall` resource is sufficient.
+- **DigitalOcean**: firewalls are ALLOW-LIST based.  Inbound is denied by
+  omitting `inbound_rule` blocks.  Outbound must be explicitly allowed (tcp,
+  udp, icmp to `0.0.0.0/0`/`::/0`) — without these rules the droplet cannot
+  reach apt, Tailscale install CDN, or DERP relays on first boot.
+
+**Where**: `terraform/hetzner/main.tf` — `hcloud_firewall.main`;
+`terraform/digitalocean/main.tf` — `digitalocean_firewall.main`.
 
 ---
 
@@ -227,7 +235,7 @@ listening port to the internet.
 - *Not ephemeral*: device entries persist after server destruction and must
   be removed manually at <https://login.tailscale.com/admin/machines>.
 
-**Where**: `terraform/cloud-init.yaml.tftpl` — `runcmd:` block.
+**Where**: `terraform/cloud-init.yaml.tftpl` — `runcmd:` block (shared by all providers).
 
 ---
 
@@ -248,42 +256,48 @@ sessions are open — expected behaviour for server infrastructure.
 
 ---
 
-### Hetzner automated backups
+### Automated backups
 
-**Rule**: `backups = true` on every `hcloud_server` resource.
+**Rule**: `backups = true` on every server resource.
 
-**Why**: Hetzner automated backups provide a point-in-time recovery option
-for ~20% of the server cost.  Opt-out requires an explicit inline comment
-explaining why.
+**Why**: Automated backups provide a point-in-time recovery option for ~20%
+of the server cost.  Opt-out requires an explicit inline comment explaining
+why.
 
-**Where**: `terraform/main.tf` — `hcloud_server.servers`.
+**Where**: `terraform/hetzner/main.tf` — `hcloud_server.servers`;
+`terraform/digitalocean/main.tf` — `digitalocean_droplet.servers`.
 
 ---
 
-### Labelling every Hetzner resource
+### Tagging / labelling every cloud resource
 
-**Rule**: Every `hcloud_*` resource gets labels:
-```hcl
-labels = merge(local.common_labels, { role = "<role>" })
-```
-Where `local.common_labels` is:
-```hcl
-{
-  "managed-by" = "terraform"
-}
-```
+**Rule**: Every cloud resource gets a `managed-by` and `role` marker.
 
-**Why**: Labels enable resource queries and automation
-(e.g. "restart all servers with role=web").  `managed-by=terraform` prevents
+**Why**: Tags/labels enable resource queries and automation
+(e.g. "list all servers with role=dev").  `managed-by=terraform` prevents
 accidental manual changes going unnoticed.
 
-**Labelling convention**:
-| Label | Values | Notes |
-|-------|--------|-------|
-| `managed-by` | `terraform` | Always `terraform` in this repo |
-| `role` | `dev`, `firewall`, … | Per-resource |
+**Provider-specific implementation**:
 
-**Where**: `terraform/main.tf` — `locals` block + each resource.
+*Hetzner* — key-value labels map on every `hcloud_*` resource:
+```hcl
+labels = merge(local.common_labels, { role = "<role>" })
+# local.common_labels = { "managed-by" = "terraform" }
+```
+
+*DigitalOcean* — flat string tags (DO does not support key-value labels):
+```hcl
+tags = concat(local.common_tags, ["role:<role>"])
+# local.common_tags = ["managed-by:terraform"]
+```
+
+**Convention**:
+| Key | Hetzner value | DO tag | Notes |
+|-----|--------------|--------|-------|
+| managed-by | `terraform` | `managed-by:terraform` | Always |
+| role | `dev`, `firewall`, … | `role:dev`, … | Per-resource |
+
+**Where**: `terraform/hetzner/main.tf` and `terraform/digitalocean/main.tf` — `locals` block + each resource.
 
 ---
 
@@ -321,6 +335,12 @@ also reads `terraform output -json server_usernames` to set `ansible_user`
 per host (falls back to `$ANSIBLE_USER` or `ikaros` if Terraform state is
 unavailable).
 
+Pass `--tf-dir` to point at the active provider module:
+```bash
+bash scripts/gen-inventory.sh                                    # Hetzner (default)
+bash scripts/gen-inventory.sh --tf-dir terraform/digitalocean   # DigitalOcean
+```
+
 **Inventory source**: Peers tagged `tag:dev-env`.
 **Group mapping**: `tag:dev-env` → `dev-env`.
 **`ansible_host`**: Tailscale IP (100.x.x.x) — no MagicDNS dependency.
@@ -337,14 +357,15 @@ server with `--advertise-tags=tag:dev-env`.
 **Rule**: Secrets are managed differently depending on whether they are
 consumed by Terraform or Ansible.
 
-**Terraform secrets** (`hcloud_token`, `tailscale_auth_key`,
-`user_hashed_password`) are passed via:
-- `terraform/terraform.tfvars` (gitignored), **or**
-- `TF_VAR_<name>` environment variables.
+**Terraform secrets** are per-provider-module.  Each module has its own
+`terraform.tfvars` (gitignored) or `TF_VAR_<name>` environment variables:
+- Hetzner: `hcloud_token`, `tailscale_auth_key`, `user_hashed_password`
+- DigitalOcean: `do_token`, `tailscale_auth_key`, `user_hashed_password`
 
 `terraform.tfvars` must never be committed.  See `.gitignore`.
 
-**Where**: `terraform/terraform.tfvars.example` (template, tracked).
+**Where**: `terraform/hetzner/terraform.tfvars.example` and
+`terraform/digitalocean/terraform.tfvars.example` (templates, tracked).
 
 **Ansible secrets** (`ansible_become_pass`, `caddy_cf_api_token`,
 `anthropic_api_key`) are stored in a single Ansible Vault-encrypted file:
@@ -398,7 +419,9 @@ roles/<name>/
 
 ### 1. Local Terraform state
 
-**Status**: Terraform uses a local `terraform.tfstate` file (default backend).
+**Status**: Terraform uses local `terraform.tfstate` files (default backend).
+Each provider module has its own state: `terraform/hetzner/terraform.tfstate`
+and `terraform/digitalocean/terraform.tfstate`.
 
 **Risk**: Local state is lost if the operator's machine is lost; it cannot
 be shared between contributors; it provides no locking, so concurrent
@@ -441,7 +464,7 @@ this file, and remove the item from this list.
 |------|-------|
 | Remote Terraform state backend | Blocker for second contributor |
 | Secret management | Terraform-side secrets manager integration |
-| Host-level firewall (UFW/nftables) | Not needed while Hetzner firewall is sufficient |
+| Host-level firewall (UFW/nftables) | Not needed while cloud firewall is sufficient |
 | Time sync configuration | Ubuntu 24.04 ships with systemd-timesyncd (good defaults) |
 | CI/CD | GitHub Actions / Gitea Actions for plan + apply |
 | Stale Tailscale device cleanup | Auth keys are intentionally non-ephemeral. Recreating servers leaves orphaned device entries in the tailnet. Fix: `scripts/cleanup-tailnet.sh` using the Tailscale management API to delete stale `tag:dev-env` devices. Needs a Tailscale OAuth API key (separate from the auth key). |
@@ -455,4 +478,5 @@ line, rule deviated from, reason.
 
 | Date | File:line | Rule | Reason |
 |------|-----------|------|--------|
-| 2026-04-29 | `terraform/main.tf` | SSH authentication: Tailscale SSH only | `hcloud_ssh_key.placeholder` registered in Hetzner solely to suppress new-server credential emails. Key pair is generated on the fly via `tls_private_key`; the private key is never used. `cloud-init` removes `/root/.ssh` on first boot before any service starts. |
+| 2026-04-29 | `terraform/hetzner/main.tf` | SSH authentication: Tailscale SSH only | `hcloud_ssh_key.placeholder` registered in Hetzner solely to suppress new-server credential emails. Key pair is generated on the fly via `tls_private_key`; the private key is never used. `cloud-init` removes `/root/.ssh` on first boot before any service starts. |
+| 2026-05-12 | `terraform/digitalocean/main.tf` | SSH authentication: Tailscale SSH only | `digitalocean_ssh_key.placeholder` registered in DigitalOcean solely to suppress new-droplet credential emails (DO emails a root password when no SSH key is attached). Same pattern as Hetzner: key pair generated on the fly, private key never used, `cloud-init` removes `/root/.ssh` on first boot. |

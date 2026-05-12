@@ -1,11 +1,7 @@
 # tflint configuration
 # https://github.com/terraform-linters/tflint
-
-plugin "hcloud" {
-  enabled = true
-  version = "0.3.0"
-  source  = "github.com/hetznercloud/tflint-ruleset-hcloud"
-}
+# Provider-specific plugins live in terraform/hetzner/.tflint.hcl and
+# terraform/digitalocean/.tflint.hcl to avoid cross-provider false positives.
 
 rule "terraform_required_providers" {
   enabled = true
