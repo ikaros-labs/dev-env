@@ -142,7 +142,7 @@ compromised service), they cannot silently escalate to root without knowing
 the password.  The sudo password is a meaningful second factor.
 
 **Implication**: The sudo password is stored in an Ansible Vault-encrypted
-file (`inventory/group_vars/all/vault.yml`) and supplied automatically.  The vault
+file (`vault.yml`) and supplied automatically.  The vault
 password file (`~/.ansible_vault_pass`) is configured in `ansible.cfg`.
 
 **Where**: The sudo group membership in cloud-init inherits Ubuntu's default
@@ -346,20 +346,17 @@ consumed by Terraform or Ansible.
 
 **Where**: `terraform/terraform.tfvars.example` (template, tracked).
 
-**Ansible secrets** (`ansible_become_pass`, `caddy_cf_api_token`) are stored
-in Ansible Vault-encrypted files:
-- `ansible/inventory/group_vars/all/vault.yml` — secrets shared across all hosts
-  (currently: `ansible_become_pass`).
-- `ansible/inventory/group_vars/dev-env/vault.yml` — secrets scoped to dev-env hosts
-  (currently: `caddy_cf_api_token`).
+**Ansible secrets** (`ansible_become_pass`, `caddy_cf_api_token`,
+`anthropic_api_key`) are stored in a single Ansible Vault-encrypted file:
+- `ansible/vault.yml` — all Ansible secrets.
 
 The vault password is read from `~/.ansible_vault_pass` (gitignored), configured
 via `vault_password_file` in `ansible/ansible.cfg`.
 
-**To edit a vault file**:
+**To edit the vault file**:
 ```bash
 cd ansible/
-ansible-vault edit inventory/group_vars/all/vault.yml
+ansible-vault edit vault.yml
 ```
 
 ---
@@ -418,8 +415,8 @@ Storage with S3-compatible backend, or Terraform Cloud).  See the
 
 ### 2. Secret management
 
-**Status**: Ansible secrets are stored in Ansible Vault-encrypted
-`group_vars/` files (`ansible_become_pass`, `caddy_cf_api_token`).  Terraform
+**Status**: Ansible secrets are stored in `ansible/vault.yml` (Ansible
+Vault-encrypted).  Terraform
 secrets are in a gitignored `terraform.tfvars` file or environment variables.
 Terraform state may still contain sensitive values.
 

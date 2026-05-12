@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gen-inventory.sh — Generate ansible/inventory/hosts.yml from Tailscale status.
+# gen-inventory.sh — Generate ansible/hosts.yml from Tailscale status.
 #
 # Uses Tailscale as the source of truth for server connectivity:
 #   - Filters peers that carry tag:dev-env.
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INVENTORY_FILE="$SCRIPT_DIR/../ansible/inventory/hosts.yml"
+INVENTORY_FILE="$SCRIPT_DIR/../ansible/hosts.yml"
 TF_DIR="$SCRIPT_DIR/../terraform"
 
 echo "Reading Tailscale status..."
