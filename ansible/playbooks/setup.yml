@@ -1,8 +1,8 @@
 ---
-# site.yml — converge all managed hosts.
+# setup.yml — converge all managed hosts.
 #
 # Run with:
-#   ansible-playbook playbooks/site.yml
+#   ansible-playbook playbooks/setup.yml
 #
 # Secrets (sudo password, API tokens) are in Ansible Vault-encrypted
 # inventory/group_vars files.  The vault password file is configured in ansible.cfg.
@@ -10,7 +10,7 @@
 # The inventory is generated from Terraform outputs; run
 # scripts/gen-inventory.sh after `terraform apply` to refresh it.
 
-- name: Converge all servers
+- name: Setup dev envs
   hosts: all
   gather_facts: true
   roles:
@@ -21,11 +21,6 @@
     - role: node_tooling
     - role: zsh_config
     - role: git_config
-
-- name: Converge dev-env servers
-  hosts: dev-env
-  gather_facts: false
-  roles:
     - role: claude_code
     - role: playwright
     - role: ansible_tool
