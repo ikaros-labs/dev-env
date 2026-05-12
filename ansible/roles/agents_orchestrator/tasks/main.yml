@@ -4,6 +4,13 @@
     that: anthropic_api_key is defined and anthropic_api_key | length > 0
     fail_msg: "anthropic_api_key must be set (defined in inventory/group_vars/dev-env/vault.yml)"
 
+- name: Install unzip (required by bun installer)
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: false
+  become: true
+
 - name: Install bun system-wide
   ansible.builtin.shell:
     cmd: curl -fsSL https://bun.sh/install | bash

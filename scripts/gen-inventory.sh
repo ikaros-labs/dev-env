@@ -22,7 +22,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INVENTORY_FILE="$SCRIPT_DIR/../ansible/hosts.yml"
-TF_DIR="$SCRIPT_DIR/../terraform"
+# Allow callers to override TF_DIR (useful when running from a git worktree
+# that doesn't have its own terraform.tfstate).
+TF_DIR="${TF_DIR:-$SCRIPT_DIR/../terraform}"
 
 echo "Reading Tailscale status..."
 
