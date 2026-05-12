@@ -1,0 +1,45 @@
+services:
+  # Tailscale sidecar — provides network access to managed servers.
+  # The tools container shares this network namespace so Ansible SSH
+  # traffic flows through the tailscale0 interface automatically.
+  tailscale:
+    image: tailscale/tailscale:latest
+    cap_add: [NET_ADMIN, SYS_MODULE]
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      TS_AUTHKEY: "${TAILSCALE_AUTH_KEY}"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      # --ephemeral removes the node from the admin console when the
+      # container stops. Remove this flag for a persistent tailnet node.
+      TS_EXTRA_ARGS: "--ephemeral"
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    healthcheck:
+      test: ["CMD", "tailscale", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+
+  tools:
+    build: .
+    # Share the Tailscale container's network namespace so this container
+    # can reach managed servers over the tailnet.
+    network_mode: service:tailscale
+    depends_on:
+      tailscale:
+        condition: service_healthy
+    volumes:
+      - .:/workspace
+      - ${HOME}/.ansible_vault_pass:/root/.ansible_vault_pass:ro
+      - tf-plugin-cache:/root/.terraform.d/plugin-cache
+      - ansible-collections:/workspace/ansible/collections
+    stdin_open: true
+    tty: true
+    command: ["bash"]
+
+volumes:
+  tailscale-state:
+  tf-plugin-cache:
+  ansible-collections:
