@@ -21,3 +21,44 @@
     state: present
     update_cache: true
   become: true
+
+- name: Check if gh hosts.yml already exists
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user }}/.config/gh/hosts.yml"
+  register: _gh_hosts_stat
+  when: gh_oauth_token is defined and gh_oauth_token | length > 0
+
+- name: Resolve GitHub login from API
+  ansible.builtin.uri:
+    url: https://api.github.com/user
+    headers:
+      Authorization: "Bearer {{ gh_oauth_token }}"
+      Accept: "application/vnd.github+json"
+  register: _gh_api_response
+  when:
+    - gh_oauth_token is defined and gh_oauth_token | length > 0
+    - not _gh_hosts_stat.stat.exists
+
+- name: Ensure gh config directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.config/gh"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0700"
+  when:
+    - gh_oauth_token is defined and gh_oauth_token | length > 0
+    - not _gh_hosts_stat.stat.exists
+
+- name: Write gh hosts.yml
+  ansible.builtin.template:
+    src: gh_hosts.yml.j2
+    dest: "/home/{{ ansible_user }}/.config/gh/hosts.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  vars:
+    _gh_login: "{{ _gh_api_response.json.login }}"
+  when:
+    - gh_oauth_token is defined and gh_oauth_token | length > 0
+    - not _gh_hosts_stat.stat.exists
