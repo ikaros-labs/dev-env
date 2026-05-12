@@ -1,7 +1,7 @@
 output "servers" {
   description = <<-EOT
     Map of server name → provisioned info (for reference).
-    Ansible inventory is generated from Tailscale status, not this output.
+    Ansible inventory is generated from the server_usernames output by gen-inventory.sh.
   EOT
   value = {
     for name, droplet in digitalocean_droplet.servers : name => {

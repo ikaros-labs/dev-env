@@ -67,11 +67,9 @@ Terraform apply  (terraform/hetzner/ or terraform/digitalocean/)
 
 scripts/gen-inventory.sh [--tf-dir terraform/hetzner|terraform/digitalocean]
   │
-  ├─► terraform output -json server_usernames (if state available)
-  └─► tailscale status --json
-        Filter peers with tag:dev-env.
-        Map tag:dev-env → group "dev-env".
-        ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
+  └─► terraform output -json server_usernames
+        Server names (Terraform keys) → Ansible group "dev-env".
+        ansible_host = server name (resolved via Tailscale MagicDNS).
         ansible_user = per-server username from Terraform output.
         Writes ansible/hosts.ini.
 
@@ -317,23 +315,21 @@ ansible-playbook playbooks/setup.yml
 
 ---
 
-### Dynamic Ansible inventory from Tailscale status
+### Dynamic Ansible inventory from Terraform output
 
 **Rule**: The Ansible inventory (`ansible/hosts.ini`) is generated
-from `tailscale status --json`.  It is gitignored and must never be
-hand-maintained.
+from `terraform output -json server_usernames`.  It is gitignored and must
+never be hand-maintained.
 
-**Why**: Tailscale is the actual connectivity layer; it is the authoritative
-source of truth for which servers are reachable and under what address.
-Using Terraform outputs caused hostname drift when a Tailscale device was
-renamed due to a name collision.
+**Why**: Terraform is the definitive record of which servers exist and under
+what names.  The server name assigned in Terraform matches the hostname
+advertised to Tailscale MagicDNS, so it is directly usable as
+`ansible_host`.
 
-**How**: Run `scripts/gen-inventory.sh` after every `terraform apply` or
-whenever the tailnet topology changes.  Requires `tailscale` in PATH and
-that the machine running the script is on the same tailnet.  The script
-also reads `terraform output -json server_usernames` to set `ansible_user`
-per host (falls back to `$ANSIBLE_USER` or `ikaros` if Terraform state is
-unavailable).
+**How**: Run `scripts/gen-inventory.sh` after every `terraform apply`.
+Requires `terraform` in PATH and a `terraform.tfstate` in the target
+module directory.  Falls back to `$ANSIBLE_USER` or `ikaros` for username
+if the Terraform output is empty.
 
 Pass `--tf-dir` to point at the active provider module:
 ```bash
@@ -341,14 +337,13 @@ bash scripts/gen-inventory.sh                                    # Hetzner (defa
 bash scripts/gen-inventory.sh --tf-dir terraform/digitalocean   # DigitalOcean
 ```
 
-**Inventory source**: Peers tagged `tag:dev-env`.
-**Group mapping**: `tag:dev-env` → `dev-env`.
-**`ansible_host`**: Tailscale IP (100.x.x.x) — no MagicDNS dependency.
+**Inventory source**: `server_usernames` Terraform output (keys = server names).
+**Group mapping**: all servers → `dev-env`.
+**`ansible_host`**: server name (resolved via Tailscale MagicDNS).
 
-**Provisioning**: Tag is advertised by `cloud-init.yaml.tftpl` via
-`tailscale up --advertise-tags=tag:dev-env`.  To apply the tag to an
-already-running server without reprovisioning, re-run `tailscale up` on the
-server with `--advertise-tags=tag:dev-env`.
+**Provisioning**: The server hostname is set by the cloud provider to match
+the Terraform resource name.  Tailscale MagicDNS advertises that hostname
+within the tailnet.
 
 ---
 
