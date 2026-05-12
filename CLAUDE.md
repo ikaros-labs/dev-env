@@ -73,7 +73,7 @@ scripts/gen-inventory.sh [--tf-dir terraform/hetzner|terraform/digitalocean]
         Map tag:dev-env → group "dev-env".
         ansible_host = Tailscale IP (collision-proof, no MagicDNS dependency).
         ansible_user = per-server username from Terraform output.
-        Writes ansible/hosts.yml.
+        Writes ansible/hosts.ini.
 
 Ansible (from a machine on the same tailnet)
   │
@@ -319,7 +319,7 @@ ansible-playbook playbooks/setup.yml
 
 ### Dynamic Ansible inventory from Tailscale status
 
-**Rule**: The Ansible inventory (`ansible/inventory/hosts.yml`) is generated
+**Rule**: The Ansible inventory (`ansible/hosts.ini`) is generated
 from `tailscale status --json`.  It is gitignored and must never be
 hand-maintained.
 

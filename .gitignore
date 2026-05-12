@@ -31,7 +31,7 @@ override.tf.json
 # =============================================================================
 
 # Generated inventory (sourced from Terraform outputs via gen-inventory.sh)
-ansible/hosts.yml
+ansible/hosts.ini
 
 # Project-local Ansible collections (installed from requirements.yml)
 ansible/collections/
