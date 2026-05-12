@@ -77,7 +77,7 @@ scripts/gen-inventory.sh (run after terraform apply)
 
 Ansible (from a machine on the same tailnet)
   │
-  └─► ansible-playbook site.yml
+  └─► ansible-playbook setup.yml
         Connects via Tailscale IP as the configured user (ansible_user).
         All servers:  common, unattended_upgrades, docker, github_cli,
                       node_tooling, zsh_config.
@@ -297,7 +297,7 @@ runs as a convergence health check.
 
 **How to verify**:
 ```bash
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/setup.yml
 # Run twice; second run must show changed=0.
 ```
 

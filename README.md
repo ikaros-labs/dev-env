@@ -167,7 +167,7 @@ cd ansible/
 
 # Secrets are decrypted automatically from Ansible Vault.
 # Ensure ~/.ansible_vault_pass exists (see CLAUDE.md for details).
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/setup.yml
 ```
 
 The sudo password is supplied via Ansible Vault (`inventory/group_vars/all/vault.yml`),
@@ -177,7 +177,7 @@ rationale.
 A fully converged host should produce **zero changes** on re-run:
 
 ```bash
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/setup.yml
 # Expected: ok=N  changed=0  failed=0
 ```
 
