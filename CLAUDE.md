@@ -107,9 +107,9 @@ their own preferred name.
 **Where**: `terraform/hetzner/variables.tf` or `terraform/digitalocean/variables.tf` — `username` variable;
 `terraform/cloud-init.yaml.tftpl` — `users:` block.
 
-**Tailscale ACL dependency**: The SSH rule in `tailscale/acl.hujson` lists
+**Tailscale ACL dependency**: The SSH rule in the Tailscale ACL policy lists
 allowed usernames.  When changing the username, update the `"users"` array
-in the ACL file and apply it at <https://login.tailscale.com/admin/acls>.
+and apply it at <https://login.tailscale.com/admin/acls>.
 
 ---
 
@@ -117,7 +117,7 @@ in the ACL file and apply it at <https://login.tailscale.com/admin/acls>.
 
 **Rule**: All SSH access goes through Tailscale SSH (`tailscale up --ssh`).
 No SSH public keys are placed in `authorized_keys`.  Password authentication
-over SSH is disabled.  The Tailscale ACL SSH rule in `tailscale/acl.hujson`
+over SSH is disabled.  The Tailscale ACL SSH rule (<https://login.tailscale.com/admin/acls>)
 must list any usernames used across servers.
 
 **Why**: The cloud firewall blocks all inbound traffic, so standard SSH
@@ -231,7 +231,7 @@ listening port to the internet.
 - *Pre-authorized*: no manual approval step needed.
 - *Reusable*: allows key reuse if additional servers are added.
   The key still expires at its configured TTL.
-- *tag:dev-env*: applies the ACL policy in `tailscale/acl.hujson`.
+- *tag:dev-env*: applies the ACL policy configured at <https://login.tailscale.com/admin/acls>.
 - *Not ephemeral*: device entries persist after server destruction and must
   be removed manually at <https://login.tailscale.com/admin/machines>.
 

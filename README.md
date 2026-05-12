@@ -70,8 +70,7 @@ You need a pre-authorized, reusable key tagged `tag:dev-env`:
    - **Tags**: `tag:dev-env`
 4. Copy the key — it starts with `tskey-auth-`.
 
-> **Note**: Tag owners for `tag:dev-env` must be configured first.
-> See `tailscale/acl.hujson` and apply it at
+> **Note**: Tag owners for `tag:dev-env` must be configured first at
 > <https://login.tailscale.com/admin/acls>.
 
 ---
