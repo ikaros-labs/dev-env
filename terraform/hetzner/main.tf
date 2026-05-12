@@ -63,4 +63,11 @@ resource "hcloud_server" "servers" {
   }))
 
   labels = merge(local.common_labels, { role = each.value.role })
+
+  # cloud-init runs once on first boot only; in-place user_data updates have
+  # no effect. Use `terraform apply -replace=hcloud_server.servers[\"<name>\"]`
+  # to intentionally reprovision a server with updated user_data.
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 }

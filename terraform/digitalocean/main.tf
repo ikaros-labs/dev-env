@@ -83,4 +83,11 @@ resource "digitalocean_droplet" "servers" {
   }))
 
   tags = concat(local.common_tags, ["role:${each.value.role}"])
+
+  # cloud-init runs once on first boot only; in-place user_data updates have
+  # no effect. Use `terraform apply -replace=digitalocean_droplet.servers[\"<name>\"]`
+  # to intentionally reprovision a droplet with updated user_data.
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 }
