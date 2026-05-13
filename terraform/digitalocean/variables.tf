@@ -44,6 +44,12 @@ variable "do_project_id" {
   default     = null
 }
 
+variable "vpc_cidr" {
+  description = "Private IP range for the DigitalOcean VPC (must not overlap with other VPCs in the same region)"
+  type        = string
+  default     = "10.10.10.0/24"
+}
+
 variable "servers" {
   description = <<-EOT
     Map of server name → config.  Each key becomes the Droplet name

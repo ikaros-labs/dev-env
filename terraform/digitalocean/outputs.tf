@@ -21,3 +21,8 @@ output "firewall_id" {
   description = "ID of the main DigitalOcean firewall"
   value       = digitalocean_firewall.main.id
 }
+
+output "vpc_id" {
+  description = "ID of the dev-env VPC"
+  value       = digitalocean_vpc.main.id
+}

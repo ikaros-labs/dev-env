@@ -11,6 +11,17 @@ locals {
 }
 
 # ---------------------------------------------------------------------------
+# VPC — isolates all droplets on a dedicated private network segment.
+# Droplets communicate privately via their VPC IP; the cloud firewall still
+# controls what enters from the internet (deny-all inbound).
+# ---------------------------------------------------------------------------
+resource "digitalocean_vpc" "main" {
+  name     = "dev-env-vpc"
+  region   = var.region
+  ip_range = var.vpc_cidr
+}
+
+# ---------------------------------------------------------------------------
 # SSH key — registered solely to suppress DigitalOcean new-droplet credential
 # emails (DO sends a root password email unless at least one SSH key is
 # attached at creation time).  Generated on the fly; the private key is never
@@ -78,6 +89,8 @@ resource "digitalocean_droplet" "servers" {
   size   = coalesce(each.value.droplet_size, var.droplet_size)
   image  = "ubuntu-24-04-x64"
   region = var.region
+
+  vpc_uuid = digitalocean_vpc.main.id
 
   backups    = true
   monitoring = true
