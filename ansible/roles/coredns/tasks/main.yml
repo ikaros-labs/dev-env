@@ -1,4 +1,14 @@
 ---
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: tailscale ip -4
+  changed_when: false
+  register: tailscale_ip_result
+  become: true
+
+- name: Set tailscale_ip fact
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
 - name: Create CoreDNS deployment directory
   ansible.builtin.file:
     path: /opt/coredns/zones
