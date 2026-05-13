@@ -158,7 +158,7 @@ make down
 | Tailscale ACL not updated | Container joins tailnet but ACL refuses SSH; update the ACL SSH rule to allow `tag:ops → tag:dev-env` |
 | Empty required variables in `.env` | Terraform/Ansible will fail with unclear errors if secrets are left as placeholder values.  Fill in every required field before running. |
 | Running on macOS | `/dev/net/tun` does not exist on macOS; the Tailscale sidecar will fail.  Use Tailscale Desktop instead and connect the host to the tailnet, then run `make shell` — the container will use the host's tailscale0 via `--network host` (requires adjusting `docker-compose.yml`) |
-| Ephemeral vs persistent node | `TS_EXTRA_ARGS: --ephemeral` is set by default.  Remove it if you want the node to persist across restarts (e.g., for repeated short-lived runs where re-authentication latency matters) |
+| Ephemeral vs persistent node | The ops node is persistent by default (`TS_EXTRA_ARGS: ""`), with hostname `ops-tools` (`TS_HOSTNAME`).  Set `TS_EXTRA_ARGS: "--ephemeral"` if you want the device entry to disappear from the admin console when the container stops. |
 
 ---
 
