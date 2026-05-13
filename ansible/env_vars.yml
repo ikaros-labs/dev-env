@@ -1,0 +1,12 @@
+---
+# env_vars.yml — secrets loaded from environment variables.
+#
+# These variables are set in the root .env file and passed into the Docker
+# container via docker-compose.yml.  Ansible reads them at playbook start
+# using the env lookup plugin.
+
+ansible_become_pass: "{{ lookup('env', 'USER_PASSWORD') }}"
+anthropic_api_key: "{{ lookup('env', 'ANTHROPIC_API_KEY') }}"
+caddy_cf_api_token: "{{ lookup('env', 'CADDY_CF_API_TOKEN') }}"
+gh_oauth_token: "{{ lookup('env', 'GH_OAUTH_TOKEN', default='') }}"
+claude_oauth_token: "{{ lookup('env', 'CLAUDE_OAUTH_TOKEN', default='') }}"

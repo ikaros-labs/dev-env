@@ -74,7 +74,7 @@ cloud-init.rendered.*
 # Docker
 # =============================================================================
 
-# Local environment — contains TAILSCALE_AUTH_KEY; never commit.
+# Local environment — contains all secrets and configuration; never commit.
 .env
 
 # =============================================================================

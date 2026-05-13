@@ -2,7 +2,7 @@
 - name: Assert caddy_cf_api_token is set
   ansible.builtin.assert:
     that: caddy_cf_api_token is defined and caddy_cf_api_token | length > 0
-    fail_msg: "caddy_cf_api_token must be set (defined in inventory/group_vars/dev-env/vault.yml)"
+    fail_msg: "caddy_cf_api_token must be set (CADDY_CF_API_TOKEN in .env)"
 
 - name: Create Caddy deployment directories
   ansible.builtin.file:

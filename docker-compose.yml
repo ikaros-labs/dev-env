@@ -8,7 +8,7 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     environment:
-      TS_AUTHKEY: "${TAILSCALE_AUTH_KEY}"
+      TS_AUTHKEY: "${TAILSCALE_OPS_AUTH_KEY}"
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: "false"
       # --ephemeral removes the node from the admin console when the
@@ -30,9 +30,20 @@ services:
     depends_on:
       tailscale:
         condition: service_healthy
+    # Pass all .env variables into the container.  Ansible reads secrets
+    # directly from the environment via lookup('env', ...) in env_vars.yml.
+    env_file: .env
+    environment:
+      # Remap .env names to TF_VAR_ names Terraform expects.
+      TF_VAR_hcloud_token: "${HCLOUD_TOKEN:-}"
+      TF_VAR_do_token: "${DO_TOKEN:-}"
+      TF_VAR_tailscale_auth_key: "${TAILSCALE_SERVER_AUTH_KEY}"
+      TF_VAR_user_hashed_password: "${USER_HASHED_PASSWORD}"
+      TF_VAR_username: "${USERNAME:-ikaros}"
+      # gen-inventory.sh reads ANSIBLE_USER for the inventory fallback.
+      ANSIBLE_USER: "${USERNAME:-ikaros}"
     volumes:
       - .:/workspace
-      - ${HOME}/.ansible_vault_pass:/root/.ansible_vault_pass:ro
       - tf-plugin-cache:/root/.terraform.d/plugin-cache
       - ansible-collections:/workspace/ansible/collections
     stdin_open: true

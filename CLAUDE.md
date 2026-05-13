@@ -97,19 +97,11 @@ Docker + Docker Compose installed locally.
 
 ### Prerequisites
 
-1. **Vault password** — must exist at `~/.ansible_vault_pass` on the host
-   (same requirement as running Ansible natively).
+1. **`.env` file** — copy `.env.example` to `.env` and fill in all required
+   values.  This single file holds every secret and configuration variable
+   for Terraform, Ansible, and the Docker Compose sidecar.
 
-2. **Terraform secrets** — `terraform/{hetzner,digitalocean}/terraform.tfvars`
-   must exist (gitignored).  The file is bind-mounted into the container via
-   the repo volume, so nothing changes here.
-
-3. **Tailscale auth key for the sidecar** — create an ephemeral, reusable,
-   pre-authorized key tagged `tag:ops` at
-   <https://login.tailscale.com/admin/settings/keys>, then copy `.env.example`
-   to `.env` and set `TAILSCALE_AUTH_KEY`.
-
-4. **Tailscale ACL** — add a rule that allows `tag:ops` to SSH into
+2. **Tailscale ACL** — add a rule that allows `tag:ops` to SSH into
    `tag:dev-env` at <https://login.tailscale.com/admin/acls>.  Without this
    the Ansible SSH connection will be refused by the tailnet policy even though
    the container is on the network.
@@ -120,36 +112,37 @@ Docker + Docker Compose installed locally.
 docker compose up
   │
   ├─► tailscale service
-  │     Joins tailnet with TAILSCALE_AUTH_KEY (ephemeral by default).
+  │     Joins tailnet with TAILSCALE_OPS_AUTH_KEY (ephemeral by default).
   │     Creates a tailscale0 interface in its network namespace.
   │
   └─► tools service (network_mode: service:tailscale)
         Shares the tailscale container's network namespace.
+        env_file: .env passes all variables into the container.
+        environment: block remaps to TF_VAR_* for Terraform.
+        Ansible reads secrets via lookup('env', ...) in env_vars.yml.
         Terraform → cloud APIs over normal internet  (no Tailscale needed)
         Ansible   → managed servers via tailscale0   (Tailscale required)
 ```
 
 The `tools` container mounts the entire repo at `/workspace`, so Terraform
-state files, `terraform.tfvars`, and generated `ansible/hosts.ini` all persist
-on the host filesystem as normal.  Named volumes cache Terraform provider
-plugins and Ansible collections between runs.
+state files and generated `ansible/hosts.ini` all persist on the host
+filesystem as normal.  Named volumes cache Terraform provider plugins and
+Ansible collections between runs.
 
 ### Common commands
 
 ```bash
 # One-time setup
-cp .env.example .env   # fill in TAILSCALE_AUTH_KEY
+cp .env.example .env   # fill in all required values
 make build
 
-# Terraform
-make tf-plan   PROVIDER=hetzner        # plan
-make tf-apply  PROVIDER=hetzner        # apply
-make tf-destroy PROVIDER=hetzner       # destroy
-
-make tf-plan   PROVIDER=digitalocean   # DigitalOcean variant
+# Terraform (PROVIDER is read from .env)
+make tf-plan            # plan
+make tf-apply           # apply
+make tf-destroy         # destroy
 
 # Ansible (generates inventory, installs collections, runs playbook)
-make ansible   PROVIDER=hetzner
+make ansible
 
 # Interactive shell on the tailnet
 make shell
@@ -163,7 +156,7 @@ make down
 | Pitfall | Notes |
 |---------|-------|
 | Tailscale ACL not updated | Container joins tailnet but ACL refuses SSH; update the ACL SSH rule to allow `tag:ops → tag:dev-env` |
-| `~/.ansible_vault_pass` missing | Mount fails silently; Ansible exits with vault decryption error |
+| Empty required variables in `.env` | Terraform/Ansible will fail with unclear errors if secrets are left as placeholder values.  Fill in every required field before running. |
 | Running on macOS | `/dev/net/tun` does not exist on macOS; the Tailscale sidecar will fail.  Use Tailscale Desktop instead and connect the host to the tailnet, then run `make shell` — the container will use the host's tailscale0 via `--network host` (requires adjusting `docker-compose.yml`) |
 | Ephemeral vs persistent node | `TS_EXTRA_ARGS: --ephemeral` is set by default.  Remove it if you want the node to persist across restarts (e.g., for repeated short-lived runs where re-authentication latency matters) |
 
@@ -219,9 +212,9 @@ eliminates one secret to generate, store, and rotate.
 compromised service), they cannot silently escalate to root without knowing
 the password.  The sudo password is a meaningful second factor.
 
-**Implication**: The sudo password is stored in an Ansible Vault-encrypted
-file (`vault.yml`) and supplied automatically.  The vault
-password file (`~/.ansible_vault_pass`) is configured in `ansible.cfg`.
+**Implication**: The sudo password is passed via the `USER_PASSWORD`
+environment variable (sourced from the root `.env` file) and read by Ansible
+through `lookup('env', ...)` in `ansible/env_vars.yml`.
 
 **Where**: The sudo group membership in cloud-init inherits Ubuntu's default
 `%sudo ALL=(ALL:ALL) ALL` rule (password required).  The hashed password is
@@ -449,31 +442,28 @@ within the tailnet.
 
 ### Secret management
 
-**Rule**: Secrets are managed differently depending on whether they are
-consumed by Terraform or Ansible.
+**Rule**: All secrets live in the root `.env` file (gitignored).  This is
+the single source of truth for both Terraform and Ansible secrets.
 
-**Terraform secrets** are per-provider-module.  Each module has its own
-`terraform.tfvars` (gitignored) or `TF_VAR_<name>` environment variables:
-- Hetzner: `hcloud_token`, `tailscale_auth_key`, `user_hashed_password`
-- DigitalOcean: `do_token`, `tailscale_auth_key`, `user_hashed_password`
+**Terraform secrets** are passed into the Docker container as `TF_VAR_*`
+environment variables via the `environment` block in `docker-compose.yml`:
+- `HCLOUD_TOKEN` → `TF_VAR_hcloud_token`
+- `DO_TOKEN` → `TF_VAR_do_token`
+- `TAILSCALE_SERVER_AUTH_KEY` → `TF_VAR_tailscale_auth_key`
+- `USER_HASHED_PASSWORD` → `TF_VAR_user_hashed_password`
 
-`terraform.tfvars` must never be committed.  See `.gitignore`.
+**Ansible secrets** are passed into the container via `env_file: .env` in
+`docker-compose.yml` and read by Ansible using `lookup('env', ...)` in
+`ansible/env_vars.yml`:
+- `USER_PASSWORD` → `ansible_become_pass`
+- `ANTHROPIC_API_KEY` → `anthropic_api_key`
+- `CADDY_CF_API_TOKEN` → `caddy_cf_api_token`
+- `GH_OAUTH_TOKEN` → `gh_oauth_token`
+- `CLAUDE_OAUTH_TOKEN` → `claude_oauth_token`
 
-**Where**: `terraform/hetzner/terraform.tfvars.example` and
-`terraform/digitalocean/terraform.tfvars.example` (templates, tracked).
+**Where**: `.env.example` (template, tracked); `.env` (live secrets, gitignored).
 
-**Ansible secrets** (`ansible_become_pass`, `caddy_cf_api_token`,
-`anthropic_api_key`) are stored in a single Ansible Vault-encrypted file:
-- `ansible/vault.yml` — all Ansible secrets.
-
-The vault password is read from `~/.ansible_vault_pass` (gitignored), configured
-via `vault_password_file` in `ansible/ansible.cfg`.
-
-**To edit the vault file**:
-```bash
-cd ansible/
-ansible-vault edit vault.yml
-```
+`.env` must never be committed.  See `.gitignore`.
 
 ---
 
@@ -533,13 +523,14 @@ Storage with S3-compatible backend, or Terraform Cloud).  See the
 
 ### 2. Secret management
 
-**Status**: Ansible secrets are stored in `ansible/vault.yml` (Ansible
-Vault-encrypted).  Terraform
-secrets are in a gitignored `terraform.tfvars` file or environment variables.
-Terraform state may still contain sensitive values.
+**Status**: All secrets are consolidated in the root `.env` file (gitignored).
+Terraform reads them via `TF_VAR_*` env vars; Ansible reads them via
+`lookup('env', ...)`.  Terraform state may still contain sensitive values.
 
 **Risk**: Terraform state can hold sensitive values even when variables are
-marked `sensitive`.
+marked `sensitive`.  All secrets are plaintext in `.env` (no encryption at
+rest), which is acceptable for a single-user dev environment but not for
+shared access.
 
 **Revisit when**: Adding a second contributor, or setting up any form of
 CI/CD pipeline.

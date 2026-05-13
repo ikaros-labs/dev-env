@@ -13,7 +13,7 @@ Claude Code, Playwright, and more — accessible over Tailscale SSH.
 
 1. [Prerequisites](#1-prerequisites)
 2. [Generating a hashed password](#2-generating-a-hashed-password)
-3. [Filling in terraform.tfvars](#3-filling-in-terraformtfvars)
+3. [Filling in .env](#3-filling-in-env)
 4. [Terraform init / apply](#4-terraform-init--apply)
 5. [Waiting for the server to join the tailnet](#5-waiting-for-the-server-to-join-the-tailnet)
 6. [Generating the Ansible inventory](#6-generating-the-ansible-inventory)
@@ -90,21 +90,32 @@ Enter your chosen sudo password when prompted. Copy the full output
 
 ---
 
-## 3. Filling in terraform.tfvars
+## 3. Filling in .env
+
+The root `.env` file is the single source of truth for all secrets and
+configuration — Terraform variables, Ansible secrets, cloud provider
+selection, and Tailscale auth keys.
 
 ```bash
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# terraform.tfvars is gitignored — it never gets committed.
-$EDITOR terraform/terraform.tfvars
+cp .env.example .env
+# .env is gitignored — it never gets committed.
+$EDITOR .env
 ```
 
-Fill in:
+Fill in every required field.  Key variables:
 
 | Variable | Where to get it |
 |----------|----------------|
-| `hcloud_token` | Hetzner Cloud Console → Security → API Tokens |
-| `tailscale_auth_key` | Step 1 above |
-| `user_hashed_password` | Step 2 above |
+| `PROVIDER` | `hetzner` or `digitalocean` |
+| `HCLOUD_TOKEN` / `DO_TOKEN` | Cloud provider console (API tokens) |
+| `TAILSCALE_OPS_AUTH_KEY` | Tailscale admin → Keys (tag:ops, ephemeral, reusable) |
+| `TAILSCALE_SERVER_AUTH_KEY` | Tailscale admin → Keys (tag:dev-env, non-ephemeral, reusable) |
+| `USER_PASSWORD` | Your chosen sudo password (plaintext) |
+| `USER_HASHED_PASSWORD` | Step 2 above |
+| `ANTHROPIC_API_KEY` | Anthropic Console |
+| `CADDY_CF_API_TOKEN` | Cloudflare dashboard → API Tokens |
+
+See `.env.example` for the full list with documentation.
 
 ---
 
@@ -170,14 +181,13 @@ cd ansible/
 # globally-installed copy.
 ansible-galaxy collection install -r requirements.yml
 
-# Secrets are decrypted automatically from Ansible Vault.
-# Ensure ~/.ansible_vault_pass exists (see CLAUDE.md for details).
+# Secrets are read from environment variables sourced from .env.
 ansible-playbook playbooks/setup.yml
 ```
 
-The sudo password is supplied via Ansible Vault (`inventory/group_vars/all/vault.yml`),
-not via CLI prompt.  NOPASSWD is intentionally not used — see CLAUDE.md for
-rationale.
+The sudo password is supplied via the `USER_PASSWORD` environment variable
+(set in `.env`), not via CLI prompt.  NOPASSWD is intentionally not used —
+see CLAUDE.md for rationale.
 
 A fully converged host should produce **zero changes** on re-run:
 
@@ -233,16 +243,13 @@ Hooks: `terraform fmt`, `tflint`, `ansible-lint`, `yamllint`, `gitleaks`.
 
 ## Secret management
 
-**Terraform** secrets are passed via `terraform/terraform.tfvars` (gitignored)
-or `TF_VAR_*` environment variables.  Do not commit `terraform.tfvars`.
+All secrets live in the root `.env` file (gitignored).  Do not commit `.env`.
 
-**Ansible** secrets (`ansible_become_pass`, `caddy_cf_api_token`) are stored in
-Ansible Vault-encrypted files under `ansible/inventory/group_vars/`.  The vault
-password is read from `~/.ansible_vault_pass` (configured in `ansible/ansible.cfg`).
+**Terraform** secrets are passed into the Docker container as `TF_VAR_*`
+environment variables via `docker-compose.yml`.
 
-To edit vault secrets:
-```bash
-cd ansible/
-ansible-vault edit inventory/group_vars/all/vault.yml   # sudo password
-ansible-vault edit inventory/group_vars/dev/vault.yml    # Cloudflare API token
-```
+**Ansible** secrets (`ansible_become_pass`, `caddy_cf_api_token`,
+`anthropic_api_key`, etc.) are read from environment variables using
+`lookup('env', ...)` in `ansible/env_vars.yml`.
+
+To update secrets, edit `.env` directly.
