@@ -22,18 +22,34 @@
     - ../env_vars.yml
   roles:
     - role: common
+      tags: common
     - role: unattended_upgrades
+      tags: unattended_upgrades
     - role: docker
+      tags: docker
     - role: github_cli
+      tags: github_cli
     - role: node_tooling
+      tags: node_tooling
     - role: zsh_config
+      tags: zsh_config
     - role: git_config
+      tags: git_config
     - role: claude_code
+      tags: claude_code
     - role: playwright
+      tags: playwright
     - role: ansible_tool
+      tags: ansible_tool
     - role: terraform
+      tags: terraform
     - role: caddy
+      tags: caddy
     - role: expose_dev_server
+      tags: expose_dev_server
     - role: code_server
+      tags: code_server
     - role: coredns
+      tags: coredns
     - role: agents_orchestrator
+      tags: agents_orchestrator
