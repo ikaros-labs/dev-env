@@ -12,4 +12,4 @@ $TTL 60
 @   IN NS ns1.demo.{{ domain }}.
 ns1 IN A 127.0.0.1
 
-*   IN CNAME dev-env.{{ tailscale_tailnet }}.
+*   IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}.

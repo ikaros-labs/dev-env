@@ -27,7 +27,7 @@ ansible:
 	  "bash scripts/gen-inventory.sh --tf-dir terraform/$(PROVIDER) && \
 	   cd ansible && \
 	   ansible-galaxy collection install -r requirements.yml && \
-	   ansible-playbook playbooks/setup.yml"
+	   ansible-playbook playbooks/setup.yml $(ARGS)"
 
 shell:
 	$(COMPOSE) run --rm tools bash
