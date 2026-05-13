@@ -1,0 +1,57 @@
+#cloud-config
+# ---------------------------------------------------------------------------
+# DEBUG cloud-init -- relaxed security for troubleshooting boot issues.
+#
+# USE THIS ONLY FOR DEBUGGING.  Switch back to cloud-init.yaml.tftpl once
+# the issue is resolved.
+#
+# Differences from production template:
+#   - Root password set (same as user password) and NOT locked
+#   - PermitRootLogin yes
+#   - PasswordAuthentication yes (allows login via DO console + SSH if
+#     firewall is temporarily opened)
+#   - /root/.ssh NOT removed
+#   - Tailscale install still attempted (so you can see where it fails)
+#   - Each runcmd step logs to /var/log/cloud-init-debug.log for easy triage
+# ---------------------------------------------------------------------------
+
+# ---- User ------------------------------------------------------------------
+users:
+  - default
+  - name: ${username}
+    groups: [sudo]
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: '${user_hashed_password}'
+
+# ---- SSH -- permissive for debugging ----------------------------------------
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-debug.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      KbdInteractiveAuthentication yes
+
+# ---- Bootstrap commands ----------------------------------------------------
+runcmd:
+  - echo "===== cloud-init runcmd started at $(date -u) =====" | tee /var/log/cloud-init-debug.log
+
+  # Restart SSH early so you can get in even if later steps fail
+  # (requires temporarily opening port 22 in the DO firewall).
+  - systemctl restart ssh
+
+  - echo ">> installing tailscale..." | tee -a /var/log/cloud-init-debug.log
+  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg 2>&1 | tee -a /var/log/cloud-init-debug.log
+  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list 2>&1 | tee -a /var/log/cloud-init-debug.log
+  - apt-get update -qq 2>&1 | tee -a /var/log/cloud-init-debug.log
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y tailscale 2>&1 | tee -a /var/log/cloud-init-debug.log
+
+  - echo ">> tailscale up..." | tee -a /var/log/cloud-init-debug.log
+  - tailscale up --ssh --advertise-tags=tag:dev-env --auth-key='${tailscale_auth_key}' 2>&1 | tee -a /var/log/cloud-init-debug.log
+
+  - echo ">> tailscale status:" | tee -a /var/log/cloud-init-debug.log
+  - tailscale status 2>&1 | tee -a /var/log/cloud-init-debug.log
+
+  - echo "===== cloud-init runcmd finished at $(date -u) =====" | tee -a /var/log/cloud-init-debug.log

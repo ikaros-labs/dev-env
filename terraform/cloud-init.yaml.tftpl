@@ -1,6 +1,6 @@
 #cloud-config
 # ---------------------------------------------------------------------------
-# Identity & access bootstrap — one-shot, runs on first boot only.
+# Identity & access bootstrap -- one-shot, runs on first boot only.
 # This file is rendered by Terraform's templatefile() and injected as
 # user_data.  It is marked sensitive in main.tf so it does not appear in
 # plan/apply output.
@@ -19,7 +19,7 @@ users:
     # SSH access is via Tailscale SSH (tailscale up --ssh); no authorized_keys needed.
     lock_passwd: false
     # user_hashed_password is a bcrypt hash derived by Terraform's bcrypt().
-    # The $ chars in the hash are safe — Terraform only interpolates $${...}
+    # The $ chars in the hash are safe -- Terraform only interpolates $${...}
     # sequences, not bare $ signs.
     passwd: '${user_hashed_password}'
 
@@ -36,11 +36,11 @@ write_files:
 # ---- Bootstrap commands ----------------------------------------------------
 # Commands run as root in order; each line is a separate shell invocation.
 runcmd:
-  # Remove the injected placeholder SSH key — private key was discarded at
+  # Remove the injected placeholder SSH key -- private key was discarded at
   # provisioning time; clean up the server side too.
   - rm -rf /root/.ssh
 
-  # Lock root password — root login is also blocked by sshd, but belt + braces.
+  # Lock root password -- root login is also blocked by sshd, but belt + braces.
   - passwd -l root
 
   # Install Tailscale via official apt repository.

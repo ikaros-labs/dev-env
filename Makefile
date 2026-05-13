@@ -8,20 +8,19 @@ build:
 	$(COMPOSE) build
 
 tf-init:
-	$(COMPOSE) run --rm tools bash -c \
-	  "cd terraform/$(PROVIDER) && terraform init"
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform init
 
 tf-plan:
-	$(COMPOSE) run --rm tools bash -c \
-	  "cd terraform/$(PROVIDER) && terraform init && terraform plan"
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform init
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform plan $(ARGS)
 
 tf-apply:
-	$(COMPOSE) run --rm tools bash -c \
-	  "cd terraform/$(PROVIDER) && terraform init && terraform apply"
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform init
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform apply $(ARGS)
 
 tf-destroy:
-	$(COMPOSE) run --rm tools bash -c \
-	  "cd terraform/$(PROVIDER) && terraform init && terraform destroy"
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform init
+	$(COMPOSE) run --rm -w /workspace/terraform/$(PROVIDER) tools terraform destroy $(ARGS)
 
 ansible:
 	$(COMPOSE) run --rm tools bash -c \
