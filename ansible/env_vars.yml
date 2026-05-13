@@ -7,7 +7,7 @@
 
 ansible_become_pass: "{{ lookup('env', 'USER_PASSWORD') }}"
 anthropic_api_key: "{{ lookup('env', 'ANTHROPIC_API_KEY') }}"
-caddy_cf_api_token: "{{ lookup('env', 'CADDY_CF_API_TOKEN') }}"
+caddy_cf_api_token: "{{ lookup('env', 'CADDY_CF_API_TOKEN', default='') }}"
 gh_oauth_token: "{{ lookup('env', 'GH_OAUTH_TOKEN', default='') }}"
 claude_oauth_token: "{{ lookup('env', 'CLAUDE_OAUTH_TOKEN', default='') }}"
 git_user_name: "{{ lookup('env', 'GIT_USER_NAME') }}"

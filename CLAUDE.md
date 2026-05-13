@@ -462,7 +462,7 @@ environment variables via the `environment` block in `docker-compose.yml`:
 `ansible/env_vars.yml`:
 - `USER_PASSWORD` → `ansible_become_pass`
 - `ANTHROPIC_API_KEY` → `anthropic_api_key`
-- `CADDY_CF_API_TOKEN` → `caddy_cf_api_token`
+- `CADDY_CF_API_TOKEN` → `caddy_cf_api_token` (optional; enables Cloudflare DNS-01 TLS challenge; HTTP-only mode when empty)
 - `GH_OAUTH_TOKEN` → `gh_oauth_token`
 - `CLAUDE_OAUTH_TOKEN` → `claude_oauth_token`
 - `GIT_USER_NAME` → `git_user_name`
