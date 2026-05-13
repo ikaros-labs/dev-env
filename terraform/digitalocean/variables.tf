@@ -44,6 +44,12 @@ variable "do_project_id" {
   default     = null
 }
 
+variable "firewall_name" {
+  description = "Name for the DigitalOcean Cloud Firewall resource"
+  type        = string
+  default     = "main-firewall"
+}
+
 variable "servers" {
   description = <<-EOT
     Map of server name → config.  Each key becomes the Droplet name

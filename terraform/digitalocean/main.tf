@@ -45,7 +45,7 @@ resource "digitalocean_project_resources" "servers" {
 #     block apt, the Tailscale install, and Tailscale DERP on first boot.
 # Firewall association is via droplet_ids here, not on the droplet resource.
 resource "digitalocean_firewall" "main" {
-  name        = "main-firewall"
+  name        = var.firewall_name
   droplet_ids = [for d in digitalocean_droplet.servers : d.id]
 
   # Intentionally no inbound_rule blocks — deny all inbound by design.
