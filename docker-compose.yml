@@ -11,9 +11,8 @@ services:
       TS_AUTHKEY: "${TAILSCALE_OPS_AUTH_KEY}"
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: "false"
-      # --ephemeral removes the node from the admin console when the
-      # container stops. Remove this flag for a persistent tailnet node.
-      TS_EXTRA_ARGS: "--ephemeral"
+      TS_HOSTNAME: "ops-tools"
+      TS_EXTRA_ARGS: ""
     volumes:
       - tailscale-state:/var/lib/tailscale
     healthcheck:
