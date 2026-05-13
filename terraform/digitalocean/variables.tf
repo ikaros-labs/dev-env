@@ -38,6 +38,12 @@ variable "droplet_size" {
   default     = "s-2vcpu-4gb"
 }
 
+variable "do_project_id" {
+  description = "DigitalOcean project ID to assign all droplets to (optional). Find at https://cloud.digitalocean.com/projects"
+  type        = string
+  default     = null
+}
+
 variable "servers" {
   description = <<-EOT
     Map of server name → config.  Each key becomes the Droplet name

@@ -27,6 +27,15 @@ resource "digitalocean_ssh_key" "placeholder" {
 }
 
 # ---------------------------------------------------------------------------
+# Project assignment (optional)
+# ---------------------------------------------------------------------------
+resource "digitalocean_project_resources" "servers" {
+  count   = var.do_project_id != null ? 1 : 0
+  project = var.do_project_id
+  resources = [for d in digitalocean_droplet.servers : d.urn]
+}
+
+# ---------------------------------------------------------------------------
 # Firewall — deny all inbound, allow all outbound
 # ---------------------------------------------------------------------------
 # DigitalOcean Cloud Firewalls are ALLOW-LIST based (unlike Hetzner which is
