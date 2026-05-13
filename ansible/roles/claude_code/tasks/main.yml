@@ -4,3 +4,11 @@
     cmd: npm install -g @anthropic-ai/claude-code
     creates: /usr/bin/claude
   become: true
+
+- name: Manage CLAUDE_CODE_OAUTH_TOKEN in /etc/environment
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: '^CLAUDE_CODE_OAUTH_TOKEN='
+    line: "CLAUDE_CODE_OAUTH_TOKEN={{ claude_oauth_token | default('') }}"
+    state: "{{ 'present' if (claude_oauth_token is defined and claude_oauth_token | length > 0) else 'absent' }}"
+  become: true
