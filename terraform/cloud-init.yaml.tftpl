@@ -18,7 +18,7 @@ users:
     # lock_passwd: false allows the hashed password to be used for sudo.
     # SSH access is via Tailscale SSH (tailscale up --ssh); no authorized_keys needed.
     lock_passwd: false
-    # user_hashed_password is a SHA-512 hash from `mkpasswd -m sha-512`.
+    # user_hashed_password is a bcrypt hash derived by Terraform's bcrypt().
     # The $ chars in the hash are safe — Terraform only interpolates $${...}
     # sequences, not bare $ signs.
     passwd: '${user_hashed_password}'
