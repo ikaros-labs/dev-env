@@ -1,7 +1,11 @@
 {
 	default_bind {{ tailscale_ip }}
+{% if not caddy_dns_challenge %}
+	auto_https off
+{% endif %}
 }
 
+{% if caddy_dns_challenge %}
 *.demo.{{ domain }} {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
@@ -15,12 +19,24 @@
 		respond "no route configured for {host}" 404
 	}
 }
+{% else %}
+:80 {
+	import /etc/caddy/demo-sites.d/*.caddy
+
+	# fallback for any subdomain you haven't mapped
+	handle {
+		respond "no route configured for {host}" 404
+	}
+}
+{% endif %}
 
 (tls_cf) {
+{% if caddy_dns_challenge %}
     tls {
         dns cloudflare {env.CF_API_TOKEN}
         resolvers 1.1.1.1
     }
+{% endif %}
 }
 
 import /etc/caddy/sites.d/*.caddy
