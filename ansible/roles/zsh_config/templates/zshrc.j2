@@ -24,6 +24,8 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 # ── Word boundaries ───────────────────────────────────────────────────────────
+# Remove - from WORDCHARS so Alt+Arrow treats hyphens as word boundaries,
+# matching macOS behaviour (e.g. ansible-playbook moves in three steps, not one).
 WORDCHARS="${WORDCHARS//-/}"
 
 # ── Key bindings ─────────────────────────────────────────────────────────────
