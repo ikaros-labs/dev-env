@@ -38,7 +38,7 @@ services:
       TF_VAR_hcloud_token: "${HCLOUD_TOKEN:-}"
       TF_VAR_do_token: "${DO_TOKEN:-}"
       TF_VAR_tailscale_auth_key: "${TAILSCALE_SERVER_AUTH_KEY}"
-      TF_VAR_user_hashed_password: "${USER_HASHED_PASSWORD}"
+      TF_VAR_user_password: "${USER_PASSWORD}"
       TF_VAR_username: "${USERNAME:-ikaros}"
       # gen-inventory.sh reads ANSIBLE_USER for the inventory fallback.
       ANSIBLE_USER: "${USERNAME:-ikaros}"

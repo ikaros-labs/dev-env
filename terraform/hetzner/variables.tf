@@ -20,12 +20,8 @@ variable "username" {
   default     = "ikaros"
 }
 
-variable "user_hashed_password" {
-  description = <<-EOT
-    SHA-512 hashed password for the server user (var.username).
-    Generate with: mkpasswd -m sha-512
-    Required for sudo (NOPASSWD is intentionally not used).
-  EOT
+variable "user_password" {
+  description = "Plaintext sudo password for the server user (var.username). Terraform derives a bcrypt hash for cloud-init."
   type        = string
   sensitive   = true
 }

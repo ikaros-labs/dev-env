@@ -51,7 +51,7 @@ Terraform apply  (terraform/hetzner/ or terraform/digitalocean/)
   └─► hcloud_server.servers / digitalocean_droplet.servers  (for_each over var.servers)
         │  Creates: dev-env (role=dev)
         │  user_data = templatefile(../cloud-init.yaml.tftpl, {
-        │    tailscale_auth_key, user_hashed_password, username
+        │    tailscale_auth_key, user_password (bcrypt-hashed), username
         │  })
         │
         ▼ (server boots, cloud-init runs ~30–60 s)
@@ -222,17 +222,21 @@ set via `passwd:` in cloud-init.
 
 ---
 
-### Hashed password supplied as a sensitive Terraform variable
+### Password hashing handled by Terraform
 
-**Rule**: The server user's sudo password is provided as a SHA-512 hash
-(e.g. from `mkpasswd -m sha-512`), never as plaintext.
+**Rule**: Only `USER_PASSWORD` (plaintext) is supplied in `.env`.  Terraform
+derives a bcrypt hash via `bcrypt(var.user_password)` at apply time and
+injects it into the cloud-init template — no manual `mkpasswd` step needed.
 
-**Why**: Terraform state, plan output, and logs may be visible to other
-tools.  A hash limits exposure.  Marked `sensitive = true` in the variable
-definition.
+**Why**: A single password variable eliminates the risk of `USER_PASSWORD` and
+`USER_HASHED_PASSWORD` getting out of sync.  The plaintext is marked
+`sensitive = true` and the `user_data` field is wrapped in `sensitive(...)`,
+so neither appears in plan/apply output.  The bcrypt hash drifts across
+`terraform plan` runs (new random salt each evaluation), but `lifecycle {
+ignore_changes = [user_data] }` on every server resource suppresses this.
 
-**Where**: `terraform/{hetzner,digitalocean}/variables.tf` — `user_hashed_password` variable;
-`terraform/{hetzner,digitalocean}/main.tf` — `sensitive(templatefile(...))` wrapper.
+**Where**: `terraform/{hetzner,digitalocean}/variables.tf` — `user_password` variable;
+`terraform/{hetzner,digitalocean}/main.tf` — `bcrypt(var.user_password)` in `templatefile(...)` call.
 
 ---
 
@@ -450,7 +454,7 @@ environment variables via the `environment` block in `docker-compose.yml`:
 - `HCLOUD_TOKEN` → `TF_VAR_hcloud_token`
 - `DO_TOKEN` → `TF_VAR_do_token`
 - `TAILSCALE_SERVER_AUTH_KEY` → `TF_VAR_tailscale_auth_key`
-- `USER_HASHED_PASSWORD` → `TF_VAR_user_hashed_password`
+- `USER_PASSWORD` → `TF_VAR_user_password` (Terraform derives a bcrypt hash via `bcrypt()` for cloud-init)
 
 **Ansible secrets** are passed into the container via `env_file: .env` in
 `docker-compose.yml` and read by Ansible using `lookup('env', ...)` in
