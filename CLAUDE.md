@@ -446,8 +446,9 @@ within the tailnet.
 
 ### Secret management
 
-**Rule**: All secrets live in the root `.env` file (gitignored).  This is
-the single source of truth for both Terraform and Ansible secrets.
+**Rule**: All secrets and site-specific configuration live in the root `.env`
+file (gitignored).  This is the single source of truth for Terraform, Ansible,
+and service identity.
 
 **Terraform secrets** are passed into the Docker container as `TF_VAR_*`
 environment variables via the `environment` block in `docker-compose.yml`:
@@ -456,7 +457,7 @@ environment variables via the `environment` block in `docker-compose.yml`:
 - `TAILSCALE_SERVER_AUTH_KEY` → `TF_VAR_tailscale_auth_key`
 - `USER_PASSWORD` → `TF_VAR_user_password` (Terraform derives a bcrypt hash via `bcrypt()` for cloud-init)
 
-**Ansible secrets** are passed into the container via `env_file: .env` in
+**Ansible variables** are passed into the container via `env_file: .env` in
 `docker-compose.yml` and read by Ansible using `lookup('env', ...)` in
 `ansible/env_vars.yml`:
 - `USER_PASSWORD` → `ansible_become_pass`
@@ -464,6 +465,10 @@ environment variables via the `environment` block in `docker-compose.yml`:
 - `CADDY_CF_API_TOKEN` → `caddy_cf_api_token`
 - `GH_OAUTH_TOKEN` → `gh_oauth_token`
 - `CLAUDE_OAUTH_TOKEN` → `claude_oauth_token`
+- `GIT_USER_NAME` → `git_user_name`
+- `GIT_USER_EMAIL` → `git_user_email`
+- `DOMAIN` → `domain` (base domain; subdomains like `demo.*`, `agents-new.*` are derived)
+- `TAILSCALE_TAILNET` → `tailscale_tailnet` (tailnet domain for CNAME targets)
 
 **Where**: `.env.example` (template, tracked); `.env` (live secrets, gitignored).
 

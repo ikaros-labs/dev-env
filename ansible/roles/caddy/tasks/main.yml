@@ -1,4 +1,14 @@
 ---
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: tailscale ip -4
+  changed_when: false
+  register: tailscale_ip_result
+  become: true
+
+- name: Set tailscale_ip fact
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
 - name: Assert caddy_cf_api_token is set
   ansible.builtin.assert:
     that: caddy_cf_api_token is defined and caddy_cf_api_token | length > 0
@@ -46,8 +56,8 @@
   notify: Restart caddy
 
 - name: Deploy Caddyfile
-  ansible.builtin.copy:
-    src: Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
     dest: /opt/caddy/Caddyfile
     owner: root
     group: root
@@ -55,10 +65,10 @@
   become: true
   notify: Reload caddy config
 
-- name: Deploy sites.d configs
-  ansible.builtin.copy:
-    src: sites.d/
-    dest: /opt/caddy/sites.d/
+- name: Deploy agents-new site config
+  ansible.builtin.template:
+    src: sites.d/agents-new.caddy.j2
+    dest: "/opt/caddy/sites.d/agents-new.{{ domain }}.caddy"
     owner: root
     group: root
     mode: "0644"

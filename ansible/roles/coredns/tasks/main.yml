@@ -29,8 +29,8 @@
   notify: Restart coredns
 
 - name: Deploy Corefile
-  ansible.builtin.copy:
-    src: Corefile
+  ansible.builtin.template:
+    src: Corefile.j2
     dest: /opt/coredns/Corefile
     owner: root
     group: root
@@ -38,10 +38,10 @@
   become: true
   notify: Restart coredns
 
-- name: Deploy zone file demo.nikmel.dev
-  ansible.builtin.copy:
-    src: zones/demo.nikmel.dev
-    dest: /opt/coredns/zones/demo.nikmel.dev
+- name: Deploy demo zone file
+  ansible.builtin.template:
+    src: zones/demo.zone.j2
+    dest: "/opt/coredns/zones/demo.{{ domain }}"
     owner: root
     group: root
     mode: "0644"

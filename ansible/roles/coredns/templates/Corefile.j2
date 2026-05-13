@@ -1,0 +1,20 @@
+demo.{{ domain }} {
+    file /etc/coredns/zones/demo.{{ domain }}
+    log
+    errors
+}
+
+agents-new.{{ domain }} {
+    template IN ANY {
+        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME dev-env.{{ tailscale_tailnet }}."
+    }
+    log
+    errors
+}
+
+. {
+    forward . 1.1.1.1 8.8.8.8
+    log
+    errors
+    cache 300
+}

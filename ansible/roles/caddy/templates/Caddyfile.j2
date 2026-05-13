@@ -1,8 +1,8 @@
 {
-	default_bind 100.112.97.123
+	default_bind {{ tailscale_ip }}
 }
 
-*.demo.nikmel.dev {
+*.demo.{{ domain }} {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
 		resolvers 1.1.1.1

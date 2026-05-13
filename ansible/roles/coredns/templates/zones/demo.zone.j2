@@ -1,0 +1,15 @@
+$ORIGIN demo.{{ domain }}.
+$TTL 60
+
+@   IN SOA ns1.demo.{{ domain }}. hostmaster.{{ domain }}. (
+    2026043001 ; serial
+    3600       ; refresh
+    900        ; retry
+    86400      ; expire
+    60         ; minimum TTL
+)
+
+@   IN NS ns1.demo.{{ domain }}.
+ns1 IN A 127.0.0.1
+
+*   IN CNAME dev-env.{{ tailscale_tailnet }}.

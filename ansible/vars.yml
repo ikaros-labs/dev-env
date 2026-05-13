@@ -1,3 +1,0 @@
----
-git_user_name: "{{ ansible_user }}"
-git_user_email: "{{ ansible_user }}@nikmel.dev"

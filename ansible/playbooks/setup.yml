@@ -18,7 +18,6 @@
     - "!min"
     - distribution
   vars_files:
-    - ../vars.yml
     - ../env_vars.yml
   roles:
     - role: common
