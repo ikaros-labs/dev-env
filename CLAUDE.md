@@ -394,20 +394,20 @@ ansible-playbook playbooks/setup.yml
 
 ### Ansible performance tuning
 
-**Rule**: Ansible is configured with Mitogen strategy, SSH multiplexing, fact
+**Rule**: Ansible is configured with SSH pipelining, SSH multiplexing, fact
 caching, and minimal fact gathering.
 
 **Why**: The default execution model spawns a new SSH+Python process per task.
 With 16 roles and ~84 tasks, this overhead dominates run time.
-- **Mitogen** (`mitogen_linear`): persistent Python interpreter on the remote,
-  2-7x speedup.
+- **SSH pipelining** (`pipelining = True`): executes modules over the
+  existing SSH connection instead of copying scripts to the remote host.
 - **SSH multiplexing** (`ControlMaster=auto`): reuses connections within a run.
 - **Fact caching** (`jsonfile`, 24h TTL): skips remote fact gathering on
   subsequent runs.  Pass `--flush-cache` to force refresh.
 - **`gather_subset: distribution`**: only collects what's actually used
-  (`ansible_distribution_release` in the docker role).
+  (`ansible_facts['distribution_release']` in the docker role).
 
-**Where**: `Dockerfile` (Mitogen install), `ansible/ansible.cfg` (all settings),
+**Where**: `ansible/ansible.cfg` (all settings),
 `ansible/playbooks/setup.yml` (`gather_subset`).
 
 ---
