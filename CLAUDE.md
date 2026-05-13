@@ -28,11 +28,12 @@ infrastructure.
 ## Table of contents
 
 1. [Bootstrap flow](#bootstrap-flow)
-2. [Rules and rationale](#rules-and-rationale)
-3. [Conventions](#conventions)
-4. [Known-incomplete areas](#known-incomplete-areas)
-5. [Future work (out of scope for initial pass)](#future-work-out-of-scope-for-initial-pass)
-6. [Exceptions log](#exceptions-log)
+2. [Docker toolchain](#docker-toolchain)
+3. [Rules and rationale](#rules-and-rationale)
+4. [Conventions](#conventions)
+5. [Known-incomplete areas](#known-incomplete-areas)
+6. [Future work (out of scope for initial pass)](#future-work-out-of-scope-for-initial-pass)
+7. [Exceptions log](#exceptions-log)
 
 ---
 
@@ -86,6 +87,85 @@ Ansible (from a machine on the same tailnet)
 **Scope boundary** — cloud-init owns *identity and access* only.  Do not use
 cloud-init for package installation, service configuration, or anything that
 needs to be re-runnable.  Those belong in Ansible roles.
+
+---
+
+## Docker toolchain
+
+Terraform and Ansible can be run from Docker so contributors only need
+Docker + Docker Compose installed locally.
+
+### Prerequisites
+
+1. **Vault password** — must exist at `~/.ansible_vault_pass` on the host
+   (same requirement as running Ansible natively).
+
+2. **Terraform secrets** — `terraform/{hetzner,digitalocean}/terraform.tfvars`
+   must exist (gitignored).  The file is bind-mounted into the container via
+   the repo volume, so nothing changes here.
+
+3. **Tailscale auth key for the sidecar** — create an ephemeral, reusable,
+   pre-authorized key tagged `tag:ops` at
+   <https://login.tailscale.com/admin/settings/keys>, then copy `.env.example`
+   to `.env` and set `TAILSCALE_AUTH_KEY`.
+
+4. **Tailscale ACL** — add a rule that allows `tag:ops` to SSH into
+   `tag:dev-env` at <https://login.tailscale.com/admin/acls>.  Without this
+   the Ansible SSH connection will be refused by the tailnet policy even though
+   the container is on the network.
+
+### How it works
+
+```
+docker compose up
+  │
+  ├─► tailscale service
+  │     Joins tailnet with TAILSCALE_AUTH_KEY (ephemeral by default).
+  │     Creates a tailscale0 interface in its network namespace.
+  │
+  └─► tools service (network_mode: service:tailscale)
+        Shares the tailscale container's network namespace.
+        Terraform → cloud APIs over normal internet  (no Tailscale needed)
+        Ansible   → managed servers via tailscale0   (Tailscale required)
+```
+
+The `tools` container mounts the entire repo at `/workspace`, so Terraform
+state files, `terraform.tfvars`, and generated `ansible/hosts.ini` all persist
+on the host filesystem as normal.  Named volumes cache Terraform provider
+plugins and Ansible collections between runs.
+
+### Common commands
+
+```bash
+# One-time setup
+cp .env.example .env   # fill in TAILSCALE_AUTH_KEY
+make build
+
+# Terraform
+make tf-plan   PROVIDER=hetzner        # plan
+make tf-apply  PROVIDER=hetzner        # apply
+make tf-destroy PROVIDER=hetzner       # destroy
+
+make tf-plan   PROVIDER=digitalocean   # DigitalOcean variant
+
+# Ansible (generates inventory, installs collections, runs playbook)
+make ansible   PROVIDER=hetzner
+
+# Interactive shell on the tailnet
+make shell
+
+# Stop all containers (ephemeral Tailscale node disappears from admin console)
+make down
+```
+
+### Pitfalls
+
+| Pitfall | Notes |
+|---------|-------|
+| Tailscale ACL not updated | Container joins tailnet but ACL refuses SSH; update the ACL SSH rule to allow `tag:ops → tag:dev-env` |
+| `~/.ansible_vault_pass` missing | Mount fails silently; Ansible exits with vault decryption error |
+| Running on macOS | `/dev/net/tun` does not exist on macOS; the Tailscale sidecar will fail.  Use Tailscale Desktop instead and connect the host to the tailnet, then run `make shell` — the container will use the host's tailscale0 via `--network host` (requires adjusting `docker-compose.yml`) |
+| Ephemeral vs persistent node | `TS_EXTRA_ARGS: --ephemeral` is set by default.  Remove it if you want the node to persist across restarts (e.g., for repeated short-lived runs where re-authentication latency matters) |
 
 ---
 
