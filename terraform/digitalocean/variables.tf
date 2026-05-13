@@ -1,5 +1,5 @@
 variable "do_token" {
-  description = "DigitalOcean API token (set via TF_VAR_do_token or terraform.tfvars)"
+  description = "DigitalOcean API token (DO_TOKEN in .env)"
   type        = string
   sensitive   = true
 }

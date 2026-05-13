@@ -1,32 +1,9 @@
-# Copy this file to terraform.tfvars and fill in real values.
-# terraform.tfvars is gitignored — never commit it.
+# terraform.tfvars is no longer used.
 #
-# Alternatively, export each variable as TF_VAR_<name>=<value> in your shell.
-
-# --- Required ---------------------------------------------------------------
-
-# DigitalOcean API token.
-# Create at: https://cloud.digitalocean.com/account/api/tokens
-# Needs Read+Write scope.
-do_token = "your-digitalocean-api-token"
-
-# Tailscale pre-authorized auth key tagged with tag:dev-env.
-# Generate at: https://login.tailscale.com/admin/settings/keys
-#   Reusable: on  |  Ephemeral: off  |  Pre-authorized: on  |  Tags: tag:dev-env
-tailscale_auth_key = "tskey-auth-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# SHA-512 hashed password for the server user (needed for sudo).
-# Generate with: mkpasswd -m sha-512
-user_hashed_password = "$6$rounds=4096$yoursalt$yourhashgoeshere..."
-
-# --- Optional (defaults shown) ----------------------------------------------
-
-# username     = "ikaros"      # Linux user created on all droplets (default: ikaros)
-# region       = "fra1"        # fra1 | ams3 | nyc3 | lon1 | sgp1 | sfo3
-# droplet_size = "s-2vcpu-4gb" # see: doctl compute size list
-
-# Per-droplet overrides (optional — default is a single dev-env droplet).
-# servers = {
-#   "dev-env"       = { role = "dev", droplet_size = "s-4vcpu-8gb" }
-#   "dev-env-alice" = { role = "dev", username = "alice" }
-# }
+# All Terraform variables are set via TF_VAR_* environment variables,
+# sourced from the root .env file and passed through docker-compose.yml.
+#
+# See .env.example in the repository root for configuration.
+#
+# To override optional variables (region, droplet_size), add
+# TF_VAR_region=ams3 etc. directly to .env.

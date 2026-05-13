@@ -1,4 +1,5 @@
-PROVIDER ?= hetzner
+PROVIDER ?= $(shell grep -s '^PROVIDER=' .env | cut -d= -f2)
+PROVIDER := $(or $(PROVIDER),hetzner)
 COMPOSE  := docker compose
 
 .PHONY: build tf-init tf-plan tf-apply tf-destroy ansible shell down

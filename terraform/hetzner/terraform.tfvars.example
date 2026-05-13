@@ -1,33 +1,9 @@
-# Copy this file to terraform.tfvars and fill in real values.
-# terraform.tfvars is gitignored — never commit it.
+# terraform.tfvars is no longer used.
 #
-# Alternatively, export each variable as TF_VAR_<name>=<value> in your shell.
-
-# --- Required ---------------------------------------------------------------
-
-# Hetzner Cloud API token.
-# Create at: https://console.hetzner.cloud/ → project → Security → API Tokens
-# Needs Read+Write permissions.
-hcloud_token = "your-hetzner-cloud-api-token"
-
-# Tailscale pre-authorized auth key tagged with tag:dev-env.
-# Generate at: https://login.tailscale.com/admin/settings/keys
-#   Reusable: on  |  Ephemeral: off  |  Pre-authorized: on  |  Tags: tag:dev-env
-tailscale_auth_key = "tskey-auth-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# SHA-512 hashed password for the server user (needed for sudo).
-# Generate with: mkpasswd -m sha-512
-# Example output (replace with your own): $6$rounds=4096$salt$hash...
-user_hashed_password = "$6$rounds=4096$yoursalt$yourhashgoeshere..."
-
-# --- Optional (defaults shown) ----------------------------------------------
-
-# username = "ikaros"   # Linux user created on all servers (default: ikaros)
-server_location = "fsn1"   # fsn1 | nbg1 | hel1 | ash | hil
-server_type     = "cx23"   # see: hcloud server-type list
-
-# Per-server overrides (optional — default is a single dev-env server).
-# servers = {
-#   "dev-env" = { role = "dev", server_type = "cx32" }
-#   "dev-env-alice" = { role = "dev", username = "alice" }
-# }
+# All Terraform variables are set via TF_VAR_* environment variables,
+# sourced from the root .env file and passed through docker-compose.yml.
+#
+# See .env.example in the repository root for configuration.
+#
+# To override optional variables (server_location, server_type), add
+# TF_VAR_server_location=nbg1 etc. directly to .env.

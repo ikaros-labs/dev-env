@@ -2,7 +2,7 @@
 - name: Assert anthropic_api_key is set
   ansible.builtin.assert:
     that: anthropic_api_key is defined and anthropic_api_key | length > 0
-    fail_msg: "anthropic_api_key must be set (defined in inventory/group_vars/dev-env/vault.yml)"
+    fail_msg: "anthropic_api_key must be set (ANTHROPIC_API_KEY in .env)"
 
 - name: Install unzip (required by bun installer)
   ansible.builtin.apt:

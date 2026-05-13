@@ -4,8 +4,8 @@
 # Run with:
 #   ansible-playbook playbooks/setup.yml
 #
-# Secrets (sudo password, API tokens) are in Ansible Vault-encrypted vault.yml.
-# The vault password file is configured in ansible.cfg.
+# Secrets (sudo password, API tokens) are read from environment variables
+# sourced from the root .env file.  See env_vars.yml for the mapping.
 #
 # The inventory is generated from Terraform outputs; run
 # scripts/gen-inventory.sh after `terraform apply` to refresh it.
@@ -19,7 +19,7 @@
     - distribution
   vars_files:
     - ../vars.yml
-    - ../vault.yml
+    - ../env_vars.yml
   roles:
     - role: common
     - role: unattended_upgrades

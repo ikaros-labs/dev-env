@@ -1,5 +1,5 @@
 variable "hcloud_token" {
-  description = "Hetzner Cloud API token (set via TF_VAR_hcloud_token or terraform.tfvars)"
+  description = "Hetzner Cloud API token (HCLOUD_TOKEN in .env)"
   type        = string
   sensitive   = true
 }
