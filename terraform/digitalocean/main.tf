@@ -16,9 +16,8 @@ locals {
 # controls what enters from the internet (deny-all inbound).
 # ---------------------------------------------------------------------------
 resource "digitalocean_vpc" "main" {
-  name     = "dev-env-vpc"
-  region   = var.region
-  ip_range = var.vpc_cidr
+  name   = "dev-env-vpc"
+  region = var.region
 }
 
 # ---------------------------------------------------------------------------
