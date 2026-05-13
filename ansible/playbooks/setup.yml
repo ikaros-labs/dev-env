@@ -38,10 +38,10 @@
       tags: claude_code
     - role: playwright
       tags: playwright
-    - role: ansible_tool
-      tags: ansible_tool
-    - role: terraform
-      tags: terraform
+    # - role: ansible_tool
+    #   tags: ansible_tool
+    # - role: terraform
+    #   tags: terraform
     - role: caddy
       tags: caddy
     - role: expose_dev_server
