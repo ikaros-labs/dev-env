@@ -36,6 +36,9 @@ ansible/hosts.ini
 # Project-local Ansible collections (installed from requirements.yml)
 ansible/collections/
 
+# Ansible fact cache (generated, host-specific)
+ansible/.fact_cache/
+
 # Retry files from failed playbook runs
 *.retry
 

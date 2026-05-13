@@ -15,7 +15,7 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
     && apt-get update && apt-get install -y terraform \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --break-system-packages ansible
+RUN pip3 install --break-system-packages ansible mitogen
 
 ENV TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
 RUN mkdir -p /root/.terraform.d/plugin-cache
