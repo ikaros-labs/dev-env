@@ -20,51 +20,20 @@
     update: true
   become: true
   become_user: "{{ ansible_user }}"
+  register: expose_dev_server_repo
 
-- name: Create ~/.claude/skills directory
-  ansible.builtin.file:
-    path: /home/{{ ansible_user }}/.claude/skills
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0755"
-  become: true
+- name: Check if skill is already installed
+  ansible.builtin.stat:
+    path: /home/{{ ansible_user }}/.claude/skills/expose-dev-server
+  register: expose_dev_server_skill
 
-- name: Create ~/.local/bin directory
-  ansible.builtin.file:
-    path: /home/{{ ansible_user }}/.local/bin
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0755"
+- name: Install expose-dev-server skill and CLI tools via Makefile
+  ansible.builtin.command:
+    cmd: make install DOMAIN=demo.{{ domain }}
+    chdir: /home/{{ ansible_user }}/expose-dev-server
   become: true
-
-- name: Symlink expose-dev-server skill
-  ansible.builtin.file:
-    src: /home/{{ ansible_user }}/expose-dev-server/skills/expose-dev-server
-    dest: /home/{{ ansible_user }}/.claude/skills/expose-dev-server
-    state: link
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: true
-
-- name: Symlink dev-register binary
-  ansible.builtin.file:
-    src: /home/{{ ansible_user }}/expose-dev-server/bin/dev-register
-    dest: /home/{{ ansible_user }}/.local/bin/dev-register
-    state: link
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: true
-
-- name: Symlink dev-unregister binary
-  ansible.builtin.file:
-    src: /home/{{ ansible_user }}/expose-dev-server/bin/dev-unregister
-    dest: /home/{{ ansible_user }}/.local/bin/dev-unregister
-    state: link
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: true
+  become_user: "{{ ansible_user }}"
+  when: expose_dev_server_repo.changed or not expose_dev_server_skill.stat.exists
 
 - name: Deploy ~/.local/bin PATH fragment
   ansible.builtin.copy:
