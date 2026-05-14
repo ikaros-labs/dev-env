@@ -44,10 +44,10 @@ variable "do_project_id" {
   default     = null
 }
 
-variable "firewall_name" {
-  description = "Name for the DigitalOcean Cloud Firewall resource"
+variable "name_prefix" {
+  description = "Optional prefix for shared resource names (SSH key, firewall) to avoid conflicts when multiple users share the same DO account. Example: \"alice\" → \"alice-main-firewall\"."
   type        = string
-  default     = "main-firewall"
+  default     = ""
 }
 
 variable "servers" {

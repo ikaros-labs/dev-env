@@ -38,6 +38,12 @@ variable "server_type" {
   default     = "cx23"
 }
 
+variable "name_prefix" {
+  description = "Optional prefix for shared resource names (SSH key, firewall) to avoid conflicts when multiple users share the same Hetzner project. Example: \"alice\" → \"alice-main-firewall\"."
+  type        = string
+  default     = ""
+}
+
 variable "servers" {
   description = <<-EOT
     Map of server name → config.  Each key becomes the hcloud_server name

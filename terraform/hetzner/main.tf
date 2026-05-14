@@ -5,6 +5,9 @@ locals {
     "managed-by" = "terraform"
   }
 
+  # Prefix for shared resource names (SSH key, firewall). Empty when var.name_prefix is unset.
+  prefix = var.name_prefix != "" ? "${var.name_prefix}-" : ""
+
   # Effective username per server: per-server override wins, then global default.
   server_username = {
     for name, cfg in var.servers : name => coalesce(cfg.username, var.username)
@@ -21,7 +24,7 @@ resource "tls_private_key" "placeholder" {
 }
 
 resource "hcloud_ssh_key" "placeholder" {
-  name       = "hetzner-email-suppressor"
+  name       = "${local.prefix}hetzner-email-suppressor"
   public_key = tls_private_key.placeholder.public_key_openssh
   labels     = local.common_labels
 }
@@ -34,7 +37,7 @@ resource "hcloud_ssh_key" "placeholder" {
 # Tailscale uses NAT traversal / DERP relays for outbound-initiated tunnels
 # and therefore needs no inbound ports.
 resource "hcloud_firewall" "main" {
-  name   = "main-firewall"
+  name   = "${local.prefix}main-firewall"
   labels = merge(local.common_labels, { role = "firewall" })
 
   # Intentionally no rules — deny all inbound by design.

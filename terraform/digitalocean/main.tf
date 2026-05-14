@@ -4,6 +4,9 @@ locals {
   # DO tags are flat strings — use "key:value" convention.
   common_tags = ["managed-by:terraform"]
 
+  # Prefix for shared resource names (SSH key, firewall). Empty when var.name_prefix is unset.
+  prefix = var.name_prefix != "" ? "${var.name_prefix}-" : ""
+
   # Effective username per droplet: per-server override wins, then global default.
   server_username = {
     for name, cfg in var.servers : name => coalesce(cfg.username, var.username)
@@ -22,7 +25,7 @@ resource "tls_private_key" "placeholder" {
 }
 
 resource "digitalocean_ssh_key" "placeholder" {
-  name       = "do-email-suppressor"
+  name       = "${local.prefix}do-email-suppressor"
   public_key = tls_private_key.placeholder.public_key_openssh
 }
 
@@ -45,7 +48,7 @@ resource "digitalocean_project_resources" "servers" {
 #     block apt, the Tailscale install, and Tailscale DERP on first boot.
 # Firewall association is via droplet_ids here, not on the droplet resource.
 resource "digitalocean_firewall" "main" {
-  name        = var.firewall_name
+  name        = "${local.prefix}main-firewall"
   droplet_ids = [for d in digitalocean_droplet.servers : d.id]
 
   # Intentionally no inbound_rule blocks — deny all inbound by design.
