@@ -20,6 +20,12 @@
     update: true
   become: true
   become_user: "{{ ansible_user }}"
+  register: expose_dev_server_repo
+
+- name: Check if skill is already installed
+  ansible.builtin.stat:
+    path: /home/{{ ansible_user }}/.claude/skills/expose-dev-server
+  register: expose_dev_server_skill
 
 - name: Install expose-dev-server skill and CLI tools via Makefile
   ansible.builtin.command:
@@ -27,7 +33,7 @@
     chdir: /home/{{ ansible_user }}/expose-dev-server
   become: true
   become_user: "{{ ansible_user }}"
-  changed_when: false
+  when: expose_dev_server_repo.changed or not expose_dev_server_skill.stat.exists
 
 - name: Deploy ~/.local/bin PATH fragment
   ansible.builtin.copy:
