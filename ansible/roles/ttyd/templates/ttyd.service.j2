@@ -1,0 +1,14 @@
+[Unit]
+Description=ttyd - Web Terminal
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ ansible_user }}
+ExecStart=/usr/local/bin/ttyd --interface 127.0.0.1 --port {{ ttyd_port }} --writable bash
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

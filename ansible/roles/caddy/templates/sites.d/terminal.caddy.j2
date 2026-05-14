@@ -1,0 +1,4 @@
+{% if not caddy_dns_challenge %}http://{% endif %}terminal.{{ domain }} {
+    import tls_cf
+    reverse_proxy 127.0.0.1:7681
+}

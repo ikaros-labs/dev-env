@@ -48,6 +48,8 @@
       tags: expose_dev_server
     - role: code_server
       tags: code_server
+    - role: ttyd
+      tags: ttyd
     - role: coredns
       tags: coredns
     - role: agents_orchestrator
