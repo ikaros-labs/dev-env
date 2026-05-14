@@ -43,11 +43,9 @@ runcmd:
   # Lock root password -- root login is also blocked by sshd, but belt + braces.
   - passwd -l root
 
-  # Install Tailscale via official apt repository.
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list
-  - apt-get update -qq
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y tailscale
+  # Install Tailscale via official install script (auto-detects distro/version,
+  # sets DEBIAN_FRONTEND=noninteractive internally).
+  - curl -fsSL https://tailscale.com/install.sh | sh
 
   # Join the tailnet.
   # --ssh              enables Tailscale SSH (no inbound port needed).

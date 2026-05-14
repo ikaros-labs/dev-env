@@ -43,10 +43,7 @@ runcmd:
   - systemctl restart ssh
 
   - echo ">> installing tailscale..." | tee -a /var/log/cloud-init-debug.log
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg 2>&1 | tee -a /var/log/cloud-init-debug.log
-  - curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list 2>&1 | tee -a /var/log/cloud-init-debug.log
-  - apt-get update -qq 2>&1 | tee -a /var/log/cloud-init-debug.log
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y tailscale 2>&1 | tee -a /var/log/cloud-init-debug.log
+  - curl -fsSL https://tailscale.com/install.sh | sh 2>&1 | tee -a /var/log/cloud-init-debug.log
 
   - echo ">> tailscale up..." | tee -a /var/log/cloud-init-debug.log
   - tailscale up --ssh --advertise-tags=tag:dev-env --auth-key='${tailscale_auth_key}' 2>&1 | tee -a /var/log/cloud-init-debug.log

@@ -59,7 +59,7 @@ Terraform apply  (terraform/hetzner/ or terraform/digitalocean/)
         ├─► Create user (var.username, sudo group, hashed password)
         ├─► Write /etc/ssh/sshd_config.d/99-hardening.conf
         ├─► Lock root password (passwd -l root)
-        ├─► Install Tailscale via apt repository
+        ├─► Install Tailscale via install.sh (https://tailscale.com/install.sh)
         ├─► tailscale up --ssh --advertise-tags=tag:dev-env --auth-key=...
         └─► systemctl restart ssh
 
