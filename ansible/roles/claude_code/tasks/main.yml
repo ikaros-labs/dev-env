@@ -1,7 +1,7 @@
 ---
 - name: Install Claude Code via official install script
   ansible.builtin.shell:
-    cmd: curl -fsSL https://claude.ai/install.sh | sh
+    cmd: curl -fsSL https://claude.ai/install.sh | bash
     creates: ~/.local/bin/claude
 
 - name: Manage CLAUDE_CODE_OAUTH_TOKEN in /etc/environment
