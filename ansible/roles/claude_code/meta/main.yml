@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: claude_code
   author: ikaros-iac
-  description: Install Claude Code (Node.js + npm global package)
+  description: Install Claude Code via official install script
   min_ansible_version: "2.15"
   platforms:
     - name: Ubuntu

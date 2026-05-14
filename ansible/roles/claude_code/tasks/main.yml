@@ -1,9 +1,8 @@
 ---
-- name: Install Claude Code globally via npm
-  ansible.builtin.command:
-    cmd: npm install -g @anthropic-ai/claude-code
-    creates: /usr/bin/claude
-  become: true
+- name: Install Claude Code via official install script
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://claude.ai/install.sh | sh
+    creates: ~/.local/bin/claude
 
 - name: Manage CLAUDE_CODE_OAUTH_TOKEN in /etc/environment
   ansible.builtin.lineinfile:
