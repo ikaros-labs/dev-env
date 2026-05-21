@@ -12,7 +12,6 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0700"
-  become: true
 
 - name: Deploy code-server config
   ansible.builtin.template:
@@ -21,7 +20,6 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0600"
-  become: true
   notify: Restart code-server
 
 - name: Enable and start code-server service
