@@ -1,0 +1,7 @@
+namespace: ikaros_labs
+name: dev_env
+version: 1.0.0
+description: Shared Ansible roles for ikaros-labs infrastructure
+authors:
+  - ikaros
+repository: https://github.com/ikaros-labs/dev-env
