@@ -222,6 +222,38 @@ set via `passwd:` in cloud-init.
 
 ---
 
+### Ansible privilege escalation: per-task only
+
+**Rule**: `become` must never be set globally in `ansible.cfg`.  Every task
+that requires root must carry an explicit `become: true`.  Tasks that do not
+require root carry no `become` key (the default is false).
+
+**Why**: A global `become = True` silently runs every task as root, including
+tasks that only touch user-owned files or perform read-only operations.
+Per-task escalation makes privilege boundaries visible, reviewable, and
+minimal — consistent with the "sudo requires a password" rule above.
+
+**`become: true` is correct for**:
+- `apt`, `apt_repository`, `get_url` to `/etc/apt/`
+- `systemd` (service management)
+- `user` (group/shell changes)
+- Writes to `/etc/`, `/opt/`, `/usr/`, `/usr/local/bin/`
+- Global package installs (`npm install -g`, `bun install` to `/usr/local`)
+
+**`become: true` is NOT needed for**:
+- `assert`, `set_fact`, `stat`, `uri` (no filesystem writes)
+- Writes to `~/` (user home), `~/.config/`, `~/.zshrc.d/`, etc.
+- `git_config` with `scope: global` (writes to `~/.gitconfig`)
+
+**`become_user`**: when a task must run as the login user but a `become: true`
+ancestor context exists (e.g. a `become_user: "{{ ansible_user }}"` block),
+pair it with `become: true` as normal.
+
+**Where**: `ansible/ansible.cfg` has no `[privilege_escalation]` section;
+escalation is declared task-by-task in each role's `tasks/main.yml`.
+
+---
+
 ### Password hashing handled by Terraform
 
 **Rule**: Only `USER_PASSWORD` (plaintext) is supplied in `.env`.  Terraform
