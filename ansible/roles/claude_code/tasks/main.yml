@@ -3,6 +3,7 @@
   ansible.builtin.shell:
     cmd: curl -fsSL https://claude.ai/install.sh | bash
     creates: ~/.local/bin/claude
+  become: false
 
 - name: Manage CLAUDE_CODE_OAUTH_TOKEN in /etc/environment
   ansible.builtin.lineinfile:
