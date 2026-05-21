@@ -14,3 +14,4 @@
   ansible.builtin.command:
     cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
   changed_when: true
+  become: true
