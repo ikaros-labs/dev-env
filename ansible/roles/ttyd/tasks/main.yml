@@ -1,0 +1,29 @@
+---
+- name: Download ttyd static binary
+  ansible.builtin.get_url:
+    url: "https://github.com/tsl0922/ttyd/releases/download/{{ ttyd_version }}/ttyd.x86_64"
+    dest: /usr/local/bin/ttyd
+    mode: "0755"
+    owner: root
+    group: root
+  become: true
+
+- name: Deploy ttyd systemd unit
+  ansible.builtin.template:
+    src: ttyd.service.j2
+    dest: /etc/systemd/system/ttyd.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart ttyd
+
+- name: Ensure ttyd service is enabled and running
+  ansible.builtin.systemd:
+    name: ttyd
+    enabled: true
+    state: started
+    daemon_reload: false
+  become: true

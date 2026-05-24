@@ -20,6 +20,13 @@ code.{{ domain }} {
     errors
 }
 
+terminal.{{ domain }} {
+    template IN ANY {
+        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
+    }
+    log
+    errors
+}
 
 . {
     forward . 1.1.1.1 8.8.8.8
