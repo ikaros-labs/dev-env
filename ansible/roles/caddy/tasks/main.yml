@@ -31,20 +31,15 @@
     mode: "0700"
   become: true
 
-- name: Check if Caddy binary exists
-  ansible.builtin.stat:
-    path: /usr/bin/caddy
-  register: caddy_binary
-
-- name: Download Caddy binary with Cloudflare DNS plugin
+- name: Install Caddy binary with Cloudflare DNS plugin
   ansible.builtin.get_url:
-    url: "https://caddyserver.com/api/download?os=linux&arch=amd64&p=github.com/caddy-dns/cloudflare"
+    url: "https://caddyserver.com/api/download?os=linux&arch=amd64&version=v{{ caddy_version }}&p=github.com/caddy-dns/cloudflare"
     dest: /usr/bin/caddy
+    checksum: "{{ caddy_checksum }}"
     owner: root
     group: root
     mode: "0755"
   become: true
-  when: not caddy_binary.stat.exists
   notify: Restart caddy
 
 - name: Create Caddy config directories
