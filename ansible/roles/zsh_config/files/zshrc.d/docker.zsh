@@ -1,6 +1,8 @@
 # Managed by Ansible (zsh_config role). Do not edit manually.
 # Ported from oh-my-zsh docker-compose plugin. Uses `docker compose` (Compose v2).
 
+export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+
 alias dco="docker compose"
 alias dcb="docker compose build"
 alias dce="docker compose exec"

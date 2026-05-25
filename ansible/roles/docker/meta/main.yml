@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: docker
   author: ikaros-iac
-  description: Install Docker Engine from the official apt repository
+  description: Install Docker Engine (rootless mode) from the official apt repository
   min_ansible_version: "2.15"
   platforms:
     - name: Ubuntu

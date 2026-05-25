@@ -24,7 +24,7 @@
     state: present
   become: true
 
-- name: Install Docker Engine packages
+- name: Install Docker Engine and rootless extras
   ansible.builtin.apt:
     name:
       - docker-ce
@@ -32,20 +32,62 @@
       - containerd.io
       - docker-buildx-plugin
       - docker-compose-plugin
+      - docker-ce-rootless-extras
+      - uidmap
+      - dbus-user-session
     state: present
     update_cache: true
   become: true
 
-- name: Ensure Docker service is enabled and running
+- name: Look up UID for {{ ansible_user }}
+  ansible.builtin.command:
+    cmd: id -u {{ ansible_user }}
+  register: docker_user_uid
+  changed_when: false
+
+- name: Disable and stop rootful Docker service
   ansible.builtin.systemd:
     name: docker
+    enabled: false
+    state: stopped
+  become: true
+
+- name: Disable and stop rootful Docker socket
+  ansible.builtin.systemd:
+    name: docker.socket
+    enabled: false
+    state: stopped
+  become: true
+
+- name: Enable lingering for {{ ansible_user }}
+  ansible.builtin.command:
+    cmd: loginctl enable-linger {{ ansible_user }}
+    creates: /var/lib/systemd/linger/{{ ansible_user }}
+  become: true
+
+- name: Check if rootless Docker is already installed
+  ansible.builtin.stat:
+    path: /home/{{ ansible_user }}/.config/systemd/user/docker.service
+  register: rootless_docker_unit
+
+- name: Install rootless Docker
+  ansible.builtin.command:
+    cmd: dockerd-rootless-setuptool.sh install
+  when: not rootless_docker_unit.stat.exists
+  become: true
+  become_user: "{{ ansible_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ docker_user_uid.stdout }}"
+    HOME: "/home/{{ ansible_user }}"
+
+- name: Enable and start rootless Docker user service
+  ansible.builtin.systemd:
+    name: docker
+    scope: user
     enabled: true
     state: started
   become: true
-
-- name: Add {{ ansible_user }} to docker group
-  ansible.builtin.user:
-    name: "{{ ansible_user }}"
-    groups: docker
-    append: true
-  become: true
+  become_user: "{{ ansible_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ docker_user_uid.stdout }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ docker_user_uid.stdout }}/bus"

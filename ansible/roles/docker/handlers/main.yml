@@ -2,5 +2,10 @@
 - name: Restart Docker
   ansible.builtin.systemd:
     name: docker
+    scope: user
     state: restarted
   become: true
+  become_user: "{{ ansible_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ docker_user_uid.stdout }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ docker_user_uid.stdout }}/bus"
