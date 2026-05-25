@@ -1,2 +1,2 @@
 #!/bin/bash
-exec caddy reload --config /etc/caddy/Caddyfile
+exec sudo /usr/bin/systemctl reload caddy
