@@ -1,4 +1,5 @@
 code.{{ domain }} {
+    import ts_bind
     template IN ANY {
         answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
     }

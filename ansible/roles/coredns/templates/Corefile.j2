@@ -1,7 +1,11 @@
+(ts_bind) {
+    bind tailscale0
+}
+
 import /etc/coredns/conf.d/*.conf
 
 . {
-    bind {{ tailscale_ip }}
+    import ts_bind
     forward . 1.1.1.1 8.8.8.8
     log
     errors
