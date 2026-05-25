@@ -1,4 +1,14 @@
 ---
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_result
+  changed_when: false
+
+- name: Set tailscale_ip fact
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
 - name: Create coredns system user
   ansible.builtin.user:
     name: coredns
@@ -41,6 +51,19 @@
     group: root
   become: true
   when: coredns_download.changed
+  notify: Restart coredns
+
+- name: Check CoreDNS binary capabilities
+  ansible.builtin.command:
+    cmd: getcap /usr/local/bin/coredns
+  register: coredns_caps
+  changed_when: false
+
+- name: Grant CAP_NET_BIND_SERVICE to CoreDNS binary
+  ansible.builtin.command:
+    cmd: setcap cap_net_bind_service=+ep /usr/local/bin/coredns
+  become: true
+  when: "'cap_net_bind_service=ep' not in coredns_caps.stdout"
   notify: Restart coredns
 
 - name: Deploy Corefile
