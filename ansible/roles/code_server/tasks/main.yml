@@ -29,3 +29,13 @@
     state: started
     daemon_reload: true
   become: true
+
+- name: Deploy CoreDNS config for code-server
+  ansible.builtin.template:
+    src: coredns.conf.j2
+    dest: /opt/coredns/conf.d/code.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart coredns

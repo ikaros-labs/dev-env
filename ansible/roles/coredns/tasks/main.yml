@@ -9,13 +9,16 @@
   ansible.builtin.set_fact:
     tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
 
-- name: Create CoreDNS deployment directory
+- name: Create CoreDNS deployment directories
   ansible.builtin.file:
-    path: /opt/coredns/zones
+    path: "{{ item }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
+  loop:
+    - /opt/coredns/conf.d
+    - /opt/coredns/zones
   become: true
 
 - name: Deploy docker-compose.yml
@@ -32,16 +35,6 @@
   ansible.builtin.template:
     src: Corefile.j2
     dest: /opt/coredns/Corefile
-    owner: root
-    group: root
-    mode: "0644"
-  become: true
-  notify: Restart coredns
-
-- name: Deploy demo zone file
-  ansible.builtin.template:
-    src: zones/demo.zone.j2
-    dest: "/opt/coredns/zones/demo.{{ domain }}"
     owner: root
     group: root
     mode: "0644"

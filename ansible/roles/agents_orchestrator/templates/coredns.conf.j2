@@ -1,0 +1,7 @@
+agents.{{ domain }} {
+    template IN ANY {
+        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
+    }
+    log
+    errors
+}
