@@ -34,16 +34,6 @@
     mode: "0755"
   become: true
 
-- name: Deploy Dockerfile
-  ansible.builtin.copy:
-    src: Dockerfile
-    dest: /opt/caddy/Dockerfile
-    owner: root
-    group: root
-    mode: "0644"
-  become: true
-  notify: Restart caddy
-
 - name: Deploy docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
@@ -96,15 +86,6 @@
   become: true
   notify: Restart caddy
   when: not caddy_dns_challenge
-
-# Always run — Docker layer cache makes this a no-op when nothing changed.
-# Must happen before the systemd "ensure started" task below.
-- name: Build caddy Docker image
-  ansible.builtin.command:
-    cmd: docker compose build
-    chdir: /opt/caddy
-  become: true
-  changed_when: false
 
 - name: Deploy caddy systemd unit
   ansible.builtin.template:
