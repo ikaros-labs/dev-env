@@ -1,26 +1,4 @@
 ---
-# Phase A: Clean up Docker-based CoreDNS (idempotent, skipped on fresh installs)
-
-- name: Check for old Docker-based CoreDNS
-  ansible.builtin.stat:
-    path: /opt/coredns/docker-compose.yml
-  register: old_coredns_compose
-
-- name: Stop Docker-based CoreDNS
-  ansible.builtin.command:
-    cmd: /usr/bin/docker compose down
-    chdir: /opt/coredns
-  become: true
-  when: old_coredns_compose.stat.exists
-
-- name: Remove old /opt/coredns directory
-  ansible.builtin.file:
-    path: /opt/coredns
-    state: absent
-  become: true
-
-# Phase B: Install native CoreDNS
-
 - name: Create coredns system user
   ansible.builtin.user:
     name: coredns
