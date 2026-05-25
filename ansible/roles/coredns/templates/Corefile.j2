@@ -1,32 +1,4 @@
-demo.{{ domain }} {
-    file /etc/coredns/zones/demo.{{ domain }}
-    log
-    errors
-}
-
-agents.{{ domain }} {
-    template IN ANY {
-        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
-    }
-    log
-    errors
-}
-
-code.{{ domain }} {
-    template IN ANY {
-        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
-    }
-    log
-    errors
-}
-
-terminal.{{ domain }} {
-    template IN ANY {
-        answer "{% raw %}{{ .Name }}{% endraw %} 60 IN CNAME {{ inventory_hostname }}.{{ tailscale_tailnet }}."
-    }
-    log
-    errors
-}
+import /etc/coredns/conf.d/*.conf
 
 . {
     forward . 1.1.1.1 8.8.8.8

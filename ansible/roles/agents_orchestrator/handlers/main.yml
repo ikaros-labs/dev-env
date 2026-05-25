@@ -9,3 +9,9 @@
     name: agents-orchestrator
     state: restarted
   become: true
+
+- name: Restart coredns
+  ansible.builtin.systemd:
+    name: coredns
+    state: restarted
+  become: true
