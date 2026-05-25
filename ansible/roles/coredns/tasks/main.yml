@@ -65,6 +65,9 @@
     - Reload systemd daemon
     - Restart coredns
 
+- name: Flush handlers before starting service
+  ansible.builtin.meta: flush_handlers
+
 - name: Ensure coredns service is enabled and running
   ansible.builtin.systemd:
     name: coredns
