@@ -75,3 +75,13 @@
     mode: "0644"
   become: true
   notify: Restart coredns
+
+- name: Deploy Caddy site config for agents-orchestrator
+  ansible.builtin.template:
+    src: agents.caddy.j2
+    dest: /opt/caddy/sites.d/agents.caddy
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config

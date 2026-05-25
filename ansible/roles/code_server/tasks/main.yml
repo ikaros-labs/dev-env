@@ -39,3 +39,13 @@
     mode: "0644"
   become: true
   notify: Restart coredns
+
+- name: Deploy Caddy site config for code-server
+  ansible.builtin.template:
+    src: code.caddy.j2
+    dest: /opt/caddy/sites.d/code.caddy
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config

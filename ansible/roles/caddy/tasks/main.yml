@@ -54,17 +54,6 @@
   become: true
   notify: Reload caddy config
 
-- name: Deploy sites.d configs
-  ansible.builtin.template:
-    src: "sites.d/{{ item | basename }}"
-    dest: "/opt/caddy/sites.d/{{ item | basename | regex_replace('\\.j2$', '') }}"
-    owner: root
-    group: root
-    mode: "0644"
-  loop: "{{ lookup('fileglob', role_path ~ '/templates/sites.d/*.caddy.j2', wantlist=True) | sort }}"
-  become: true
-  notify: Reload caddy config
-
 - name: Deploy caddy environment file
   ansible.builtin.template:
     src: caddy.env.j2
