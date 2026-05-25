@@ -1,0 +1,4 @@
+agents.{{ domain }} {
+    import tls_cf
+    reverse_proxy 127.0.0.1:{{ agents_orchestrator_port }}
+}
