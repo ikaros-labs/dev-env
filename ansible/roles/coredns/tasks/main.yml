@@ -46,6 +46,7 @@
   ansible.builtin.get_url:
     url: "https://github.com/coredns/coredns/releases/download/v{{ coredns_version }}/coredns_{{ coredns_version }}_linux_amd64.tgz"
     dest: "/tmp/coredns_{{ coredns_version }}.tgz"
+    checksum: "sha256:{{ coredns_sha256 }}"
     mode: "0644"
   become: true
   register: coredns_download
