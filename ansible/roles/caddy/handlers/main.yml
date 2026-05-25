@@ -11,7 +11,7 @@
   become: true
 
 - name: Reload caddy config
-  ansible.builtin.command:
-    cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
-  changed_when: true
+  ansible.builtin.systemd:
+    name: caddy
+    state: reloaded
   become: true

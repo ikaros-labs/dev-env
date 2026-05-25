@@ -13,7 +13,41 @@
   ansible.builtin.set_fact:
     caddy_dns_challenge: "{{ caddy_cf_api_token | default('') | length > 0 }}"
 
-- name: Create Caddy deployment directories
+- name: Create caddy system user
+  ansible.builtin.user:
+    name: caddy
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    home: /var/lib/caddy
+  become: true
+
+- name: Create Caddy data directory
+  ansible.builtin.file:
+    path: /var/lib/caddy
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: "0700"
+  become: true
+
+- name: Check if Caddy binary exists
+  ansible.builtin.stat:
+    path: /usr/bin/caddy
+  register: caddy_binary
+
+- name: Download Caddy binary with Cloudflare DNS plugin
+  ansible.builtin.get_url:
+    url: "https://caddyserver.com/api/download?os=linux&arch=amd64&p=github.com/caddy-dns/cloudflare"
+    dest: /usr/bin/caddy
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: not caddy_binary.stat.exists
+  notify: Restart caddy
+
+- name: Create Caddy config directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -21,33 +55,23 @@
     group: root
     mode: "0755"
   loop:
-    - /opt/caddy
-    - /opt/caddy/sites.d
+    - /etc/caddy
+    - /etc/caddy/sites.d
   become: true
 
 - name: Create demo-sites.d directory ({{ ansible_user }}-writable)
   ansible.builtin.file:
-    path: /opt/caddy/demo-sites.d
+    path: /etc/caddy/demo-sites.d
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0755"
   become: true
 
-- name: Deploy docker-compose.yml
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: /opt/caddy/docker-compose.yml
-    owner: root
-    group: root
-    mode: "0644"
-  become: true
-  notify: Restart caddy
-
 - name: Deploy Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
-    dest: /opt/caddy/Caddyfile
+    dest: /etc/caddy/Caddyfile
     owner: root
     group: root
     mode: "0644"
@@ -57,7 +81,7 @@
 - name: Deploy sites.d configs
   ansible.builtin.template:
     src: "sites.d/{{ item | basename }}"
-    dest: "/opt/caddy/sites.d/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    dest: "/etc/caddy/sites.d/{{ item | basename | regex_replace('\\.j2$', '') }}"
     owner: root
     group: root
     mode: "0644"
@@ -68,7 +92,7 @@
 - name: Deploy caddy environment file
   ansible.builtin.template:
     src: caddy.env.j2
-    dest: /opt/caddy/.env
+    dest: /etc/caddy/.env
     owner: root
     group: root
     mode: "0600"
@@ -79,7 +103,7 @@
 - name: Deploy empty caddy environment file (no DNS challenge)
   ansible.builtin.copy:
     content: ""
-    dest: /opt/caddy/.env
+    dest: /etc/caddy/.env
     owner: root
     group: root
     mode: "0600"
@@ -114,4 +138,28 @@
     owner: root
     group: root
     mode: "0755"
+  become: true
+
+- name: Stop old Docker-based caddy (if present)
+  ansible.builtin.command:
+    cmd: docker compose down --remove-orphans
+    chdir: /opt/caddy
+  become: true
+  failed_when: false
+  changed_when: false
+
+- name: Remove old caddy Docker volumes
+  ansible.builtin.command:
+    cmd: docker volume rm {{ item }}
+  loop:
+    - caddy_caddy_data
+    - caddy_caddy_config
+  become: true
+  failed_when: false
+  changed_when: false
+
+- name: Remove old Caddy deployment directory
+  ansible.builtin.file:
+    path: /opt/caddy
+    state: absent
   become: true
