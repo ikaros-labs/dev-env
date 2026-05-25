@@ -33,7 +33,7 @@
 - name: Deploy CoreDNS config for code-server
   ansible.builtin.template:
     src: coredns.conf.j2
-    dest: /opt/coredns/conf.d/code.conf
+    dest: /etc/coredns/conf.d/code.conf
     owner: root
     group: root
     mode: "0644"

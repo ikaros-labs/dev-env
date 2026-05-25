@@ -31,7 +31,7 @@
 - name: Deploy CoreDNS config for ttyd
   ansible.builtin.template:
     src: coredns.conf.j2
-    dest: /opt/coredns/conf.d/terminal.conf
+    dest: /etc/coredns/conf.d/terminal.conf
     owner: root
     group: root
     mode: "0644"

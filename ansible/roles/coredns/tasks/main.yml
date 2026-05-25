@@ -1,15 +1,14 @@
 ---
-- name: Get Tailscale IPv4 address
-  ansible.builtin.command: tailscale ip -4
-  changed_when: false
-  register: tailscale_ip_result
+- name: Create coredns system user
+  ansible.builtin.user:
+    name: coredns
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
   become: true
 
-- name: Set tailscale_ip fact
-  ansible.builtin.set_fact:
-    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
-
-- name: Create CoreDNS deployment directories
+- name: Create CoreDNS config directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -17,24 +16,37 @@
     group: root
     mode: "0755"
   loop:
-    - /opt/coredns/conf.d
-    - /opt/coredns/zones
+    - /etc/coredns/conf.d
+    - /etc/coredns/zones
   become: true
 
-- name: Deploy docker-compose.yml
-  ansible.builtin.template:
-    src: docker-compose.yml.j2
-    dest: /opt/coredns/docker-compose.yml
-    owner: root
-    group: root
+- name: Download CoreDNS release tarball
+  ansible.builtin.get_url:
+    url: "https://github.com/coredns/coredns/releases/download/v{{ coredns_version }}/coredns_{{ coredns_version }}_linux_amd64.tgz"
+    dest: "/tmp/coredns_{{ coredns_version }}.tgz"
+    checksum: "sha256:{{ coredns_sha256 }}"
     mode: "0644"
   become: true
+  register: coredns_download
+
+- name: Extract CoreDNS binary
+  ansible.builtin.unarchive:
+    src: "/tmp/coredns_{{ coredns_version }}.tgz"
+    dest: /usr/local/bin/
+    remote_src: true
+    include:
+      - coredns
+    mode: "0755"
+    owner: root
+    group: root
+  become: true
+  when: coredns_download.changed
   notify: Restart coredns
 
 - name: Deploy Corefile
   ansible.builtin.template:
     src: Corefile.j2
-    dest: /opt/coredns/Corefile
+    dest: /etc/coredns/Corefile
     owner: root
     group: root
     mode: "0644"
