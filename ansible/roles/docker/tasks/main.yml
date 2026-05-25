@@ -72,7 +72,7 @@
 
 - name: Install rootless Docker
   ansible.builtin.command:
-    cmd: dockerd-rootless-setuptool.sh install
+    cmd: dockerd-rootless-setuptool.sh install --force
   when: not rootless_docker_unit.stat.exists
   become: true
   become_user: "{{ ansible_user }}"
