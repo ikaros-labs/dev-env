@@ -1,14 +1,4 @@
 ---
-- name: Get Tailscale IPv4 address
-  ansible.builtin.command:
-    cmd: tailscale ip -4
-  register: tailscale_ip_result
-  changed_when: false
-
-- name: Set tailscale_ip fact
-  ansible.builtin.set_fact:
-    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
-
 - name: Create coredns system user
   ansible.builtin.user:
     name: coredns
@@ -87,6 +77,29 @@
   notify:
     - Reload systemd daemon
     - Restart coredns
+
+- name: Disable systemd-resolved stub listener
+  ansible.builtin.copy:
+    dest: /etc/systemd/resolved.conf.d/no-stub.conf
+    content: |
+      [Resolve]
+      DNSStubListener=no
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart systemd-resolved
+
+- name: Configure /etc/resolv.conf to use CoreDNS
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 127.0.0.1
+      options edns0 trust-ad
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
 
 - name: Flush handlers before starting service
   ansible.builtin.meta: flush_handlers
