@@ -107,12 +107,14 @@
     - Reload systemd daemon
     - Restart caddy
 
+- name: Flush handlers before starting service
+  ansible.builtin.meta: flush_handlers
+
 - name: Ensure caddy service is enabled and running
   ansible.builtin.systemd:
     name: caddy
     enabled: true
     state: started
-    daemon_reload: false
   become: true
 
 - name: Deploy caddy-reload convenience script
