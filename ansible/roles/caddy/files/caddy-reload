@@ -1,2 +1,2 @@
 #!/bin/bash
-exec docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+exec caddy reload --config /etc/caddy/Caddyfile
