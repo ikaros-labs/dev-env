@@ -2,6 +2,10 @@
 	default_bind {{ tailscale_ip }}
 }
 
+http:// {
+	redir https://{host}{uri} permanent
+}
+
 *.demo.{{ domain }} {
 	tls internal
 
