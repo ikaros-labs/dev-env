@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User={{ ansible_user }}
-ExecStart=/usr/local/bin/ttyd --interface 127.0.0.1 --port {{ ttyd_port }} --writable bash
+ExecStart=/usr/local/bin/ttyd --interface 127.0.0.1 --port {{ ttyd_port }} --writable zsh
 Restart=always
 RestartSec=5
 
