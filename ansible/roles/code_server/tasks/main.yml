@@ -30,6 +30,16 @@
     daemon_reload: true
   become: true
 
+- name: Deploy Caddy site config for code-server
+  ansible.builtin.template:
+    src: caddy.conf.j2
+    dest: /etc/caddy/sites.d/code.caddy
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config
+
 - name: Deploy CoreDNS config for code-server
   ansible.builtin.template:
     src: coredns.conf.j2

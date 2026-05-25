@@ -1,4 +1,4 @@
 terminal.{{ domain }} {
     import tls_cf
-    reverse_proxy 127.0.0.1:7681
+    reverse_proxy 127.0.0.1:{{ ttyd_port }}
 }
