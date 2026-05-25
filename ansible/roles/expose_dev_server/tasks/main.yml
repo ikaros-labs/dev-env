@@ -22,10 +22,16 @@
   become_user: "{{ ansible_user }}"
   register: expose_dev_server_repo
 
-- name: Check if skill is already installed
+- name: Check expose-dev-server domain config file
   ansible.builtin.stat:
-    path: /home/{{ ansible_user }}/.claude/skills/expose-dev-server
-  register: expose_dev_server_skill
+    path: /home/{{ ansible_user }}/.config/expose-dev-server/domain
+  register: expose_domain_file
+
+- name: Read expose-dev-server domain config
+  ansible.builtin.slurp:
+    src: /home/{{ ansible_user }}/.config/expose-dev-server/domain
+  register: expose_domain_content
+  when: expose_domain_file.stat.exists
 
 - name: Install expose-dev-server skill and CLI tools via Makefile
   ansible.builtin.command:
@@ -33,7 +39,10 @@
     chdir: /home/{{ ansible_user }}/expose-dev-server
   become: true
   become_user: "{{ ansible_user }}"
-  when: expose_dev_server_repo.changed or not expose_dev_server_skill.stat.exists
+  when: >-
+    expose_dev_server_repo.changed or
+    not expose_domain_file.stat.exists or
+    (expose_domain_content.content | default('') | b64decode | trim) != 'demo.' + domain
 
 - name: Deploy ~/.local/bin PATH fragment
   ansible.builtin.copy:
