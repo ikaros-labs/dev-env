@@ -134,27 +134,3 @@
     group: root
     mode: "0755"
   become: true
-
-- name: Stop old Docker-based caddy (if present)
-  ansible.builtin.command:
-    cmd: docker compose down --remove-orphans
-    chdir: /opt/caddy
-  become: true
-  failed_when: false
-  changed_when: false
-
-- name: Remove old caddy Docker volumes
-  ansible.builtin.command:
-    cmd: docker volume rm {{ item }}
-  loop:
-    - caddy_caddy_data
-    - caddy_caddy_config
-  become: true
-  failed_when: false
-  changed_when: false
-
-- name: Remove old Caddy deployment directory
-  ansible.builtin.file:
-    path: /opt/caddy
-    state: absent
-  become: true
