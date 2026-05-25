@@ -37,8 +37,6 @@
   ansible.builtin.command:
     cmd: make install DOMAIN=demo.{{ domain }}
     chdir: /home/{{ ansible_user }}/expose-dev-server
-  become: true
-  become_user: "{{ ansible_user }}"
   when: >-
     expose_dev_server_repo.changed or
     not expose_domain_file.stat.exists or
