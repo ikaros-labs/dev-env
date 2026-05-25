@@ -9,6 +9,7 @@ User={{ ansible_user }}
 WorkingDirectory=/home/{{ ansible_user }}/agents-orchestrator
 EnvironmentFile=/home/{{ ansible_user }}/agents-orchestrator/.env
 Environment=NODE_ENV=production
+Environment=PATH=/home/{{ ansible_user }}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/usr/local/bin/bun run src/server.ts
 Restart=always
 RestartSec=5
