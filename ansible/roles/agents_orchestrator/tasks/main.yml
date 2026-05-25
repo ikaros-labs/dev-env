@@ -69,7 +69,7 @@
 - name: Deploy CoreDNS config for agents-orchestrator
   ansible.builtin.template:
     src: coredns.conf.j2
-    dest: /opt/coredns/conf.d/agents.conf
+    dest: /etc/coredns/conf.d/agents.conf
     owner: root
     group: root
     mode: "0644"

@@ -53,7 +53,7 @@
 - name: Deploy CoreDNS config for demo zone
   ansible.builtin.template:
     src: coredns.conf.j2
-    dest: /opt/coredns/conf.d/demo.conf
+    dest: /etc/coredns/conf.d/demo.conf
     owner: root
     group: root
     mode: "0644"
@@ -63,7 +63,7 @@
 - name: Deploy demo zone file
   ansible.builtin.template:
     src: demo.zone.j2
-    dest: "/opt/coredns/zones/demo.{{ domain }}"
+    dest: "/etc/coredns/zones/demo.{{ domain }}"
     owner: root
     group: root
     mode: "0644"
