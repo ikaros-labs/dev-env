@@ -9,6 +9,6 @@ alias tg="terragrunt"
 alias tga="terragrunt apply"
 alias tgi="terragrunt init"
 alias cc="claude"
-alias ccp="claude -p"
+ccp() { claude -p "$*"; }
 alias ccd="claude --dangerously-skip-permissions"
-alias ccdp="claude --dangerously-skip-permissions -p"
+ccdp() { claude --dangerously-skip-permissions -p "$*"; }
