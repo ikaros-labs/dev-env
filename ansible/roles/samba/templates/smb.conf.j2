@@ -1,0 +1,42 @@
+# {{ ansible_managed }}
+[global]
+   interfaces = {{ tailscale_ip }}/10
+   bind interfaces only = yes
+
+   server min protocol = SMB3
+   server max protocol = SMB3
+
+   server role = standalone server
+   map to guest = never
+   usershare allow guests = no
+
+   # macOS Finder compatibility
+   vfs objects = fruit streams_xattr
+   fruit:metadata = stream
+   fruit:model = MacSamba
+   fruit:posix_rename = yes
+   fruit:veto_appledouble = no
+   fruit:nfs_aces = no
+   fruit:wipe_intentionally_left_blank_rfork = yes
+   fruit:delete_empty_adfiles = yes
+
+   log file = /var/log/samba/log.%m
+   max log size = 1000
+   log level = 1
+
+   load printers = no
+   printing = bsd
+   printcap name = /dev/null
+   disable spoolss = yes
+
+   disable netbios = yes
+   smb ports = 445
+
+[{{ samba_share_name }}]
+   comment = {{ samba_share_comment }}
+   path = /home/{{ ansible_user }}
+   browseable = yes
+   read only = no
+   valid users = {{ ansible_user }}
+   create mask = 0644
+   directory mask = 0755

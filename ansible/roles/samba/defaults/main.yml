@@ -1,0 +1,3 @@
+---
+samba_share_name: home
+samba_share_comment: "Home directory"

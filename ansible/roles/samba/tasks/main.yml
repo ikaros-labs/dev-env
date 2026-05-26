@@ -1,0 +1,54 @@
+---
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: tailscale ip -4
+  changed_when: false
+  register: tailscale_ip_result
+  become: true
+
+- name: Set tailscale_ip fact
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
+- name: Install Samba
+  ansible.builtin.apt:
+    name:
+      - samba
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Deploy smb.conf
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/bin/testparm -s %s
+  become: true
+  notify: Restart smbd
+
+- name: Set Samba password for {{ ansible_user }}
+  ansible.builtin.shell:
+    cmd: >
+      printf '%s\n%s\n' '{{ ansible_become_pass }}' '{{ ansible_become_pass }}'
+      | smbpasswd -s -a {{ ansible_user }}
+  become: true
+  register: samba_password_result
+  changed_when: "'Added user' in samba_password_result.stdout"
+  no_log: true
+
+- name: Disable nmbd service
+  ansible.builtin.systemd:
+    name: nmbd
+    enabled: false
+    state: stopped
+  become: true
+
+- name: Ensure smbd service is enabled and running
+  ansible.builtin.systemd:
+    name: smbd
+    enabled: true
+    state: started
+  become: true
