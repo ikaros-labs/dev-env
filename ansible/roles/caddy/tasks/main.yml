@@ -117,6 +117,16 @@
     state: started
   become: true
 
+- name: Allow user to reload/restart caddy without password
+  ansible.builtin.copy:
+    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload caddy, /usr/bin/systemctl restart caddy\n"
+    dest: /etc/sudoers.d/caddy-reload
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+  become: true
+
 - name: Deploy caddy-reload convenience script
   ansible.builtin.copy:
     src: caddy-reload
