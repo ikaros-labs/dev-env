@@ -90,6 +90,7 @@ resource "digitalocean_droplet" "servers" {
 
   user_data = sensitive(templatefile("${path.module}/../cloud-init.yaml.tftpl", {
     tailscale_auth_key   = var.tailscale_auth_key
+    tailscale_tags       = "tag:dev-env"
     user_hashed_password = bcrypt(var.user_password)
     username             = local.server_username[each.key]
   }))
