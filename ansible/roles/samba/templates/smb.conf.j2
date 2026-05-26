@@ -1,7 +1,7 @@
 # {{ ansible_managed }}
 [global]
-   interfaces = {{ tailscale_ip }}/32
-   bind interfaces only = yes
+   hosts allow = 100.64.0.0/10
+   hosts deny = ALL
 
    server min protocol = SMB3
    server max protocol = SMB3
