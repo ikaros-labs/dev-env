@@ -13,6 +13,7 @@ services:
       TS_USERSPACE: "false"
       TS_HOSTNAME: "ops-tools"
       TS_EXTRA_ARGS: ""
+      TS_ACCEPT_DNS: "true"
     volumes:
       - tailscale-state:/var/lib/tailscale
     healthcheck:
