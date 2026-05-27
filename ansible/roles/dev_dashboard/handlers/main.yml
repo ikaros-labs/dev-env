@@ -1,0 +1,17 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Restart dev-dashboard
+  ansible.builtin.systemd:
+    name: dev-dashboard
+    state: restarted
+  become: true
+
+- name: Restart coredns
+  ansible.builtin.systemd:
+    name: coredns
+    state: restarted
+  become: true
