@@ -54,5 +54,7 @@
       tags: ttyd
     - role: agents_orchestrator
       tags: agents_orchestrator
+    - role: dev_dashboard
+      tags: dev_dashboard
     - role: samba
       tags: samba
