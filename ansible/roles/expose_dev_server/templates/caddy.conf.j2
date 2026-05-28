@@ -1,0 +1,9 @@
+*.demo.{{ domain }} {
+	import tls_cf
+
+	import /etc/caddy/demo-sites.d/*.caddy
+
+	handle {
+		respond "no route configured for {host}" 404
+	}
+}

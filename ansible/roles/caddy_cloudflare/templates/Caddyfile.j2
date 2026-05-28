@@ -3,16 +3,6 @@
 	default_bind {{ tailscale_ip }}
 }
 
-*.demo.{{ domain }} {
-	tls internal
-
-	import /etc/caddy/demo-sites.d/*.caddy
-
-	handle {
-		respond "no route configured for {host}" 404
-	}
-}
-
 (tls_cf) {
 	tls internal
 }

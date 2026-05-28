@@ -50,6 +50,25 @@
     group: "{{ ansible_user }}"
     mode: "0644"
 
+- name: Ensure /etc/caddy/demo-sites.d directory exists
+  ansible.builtin.file:
+    path: /etc/caddy/demo-sites.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Deploy Caddy wildcard config for demo subdomain
+  ansible.builtin.template:
+    src: caddy.conf.j2
+    dest: /etc/caddy/sites.d/demo.caddy
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config
+
 - name: Deploy CoreDNS config for demo zone
   ansible.builtin.template:
     src: coredns.conf.j2
