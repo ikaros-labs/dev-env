@@ -42,7 +42,7 @@
     #   tags: ansible_tool
     # - role: terraform
     #   tags: terraform
-    - role: caddy
+    - role: caddy_cloudflare
       tags: caddy
     - role: coredns
       tags: coredns

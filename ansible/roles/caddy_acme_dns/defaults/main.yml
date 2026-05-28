@@ -1,0 +1,7 @@
+---
+caddy_version: "2.11.3"
+caddy_checksum: ""  # run: curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=amd64&version=v2.11.3&p=github.com/caddy-dns/acmedns" -o /tmp/caddy-acmedns && sha256sum /tmp/caddy-acmedns
+caddy_acmedns_username: ""
+caddy_acmedns_password: ""
+caddy_acmedns_subdomain: ""
+caddy_acmedns_server_url: ""

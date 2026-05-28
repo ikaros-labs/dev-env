@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: caddy
+  role_name: caddy_cloudflare
   author: ikaros-iac
   description: Deploy Caddy (with Cloudflare DNS plugin) as a native systemd service
   min_ansible_version: "2.15"
