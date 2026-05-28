@@ -3,8 +3,20 @@
 	default_bind {{ tailscale_ip }}
 }
 
+(tls_cf) {
+	tls {
+		resolvers 1.1.1.1 8.8.8.8
+		dns acmedns {
+			username {$ACMEDNS_USERNAME}
+			password {$ACMEDNS_PASSWORD}
+			subdomain {$ACMEDNS_SUBDOMAIN}
+			server_url {$ACMEDNS_SERVER_URL}
+		}
+	}
+}
+
 *.demo.{{ domain }} {
-	tls internal
+	import tls_cf
 
 	import /etc/caddy/demo-sites.d/*.caddy
 
@@ -13,19 +25,14 @@
 	}
 }
 
-(tls_cf) {
-{% if caddy_dns_challenge %}
-	tls {
-		dns acmedns {
-			username {env.ACMEDNS_USERNAME}
-			password {env.ACMEDNS_PASSWORD}
-			subdomain {env.ACMEDNS_SUBDOMAIN}
-			server_url {env.ACMEDNS_SERVER_URL}
-		}
+*.{{ domain }} {
+	import tls_cf
+
+	import /etc/caddy/demo-sites.d/*.caddy
+
+	handle {
+		respond "no route configured for {host}" 404
 	}
-{% else %}
-	tls internal
-{% endif %}
 }
 
 import /etc/caddy/sites.d/*.caddy
