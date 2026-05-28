@@ -1,0 +1,137 @@
+---
+- name: Get Tailscale IPv4 address
+  ansible.builtin.command: tailscale ip -4
+  changed_when: false
+  register: tailscale_ip_result
+  become: true
+
+- name: Set tailscale_ip fact
+  ansible.builtin.set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
+- name: Determine if ACME-DNS challenge is available
+  ansible.builtin.set_fact:
+    caddy_dns_challenge: "{{ caddy_acmedns_username | default('') | length > 0 }}"
+
+- name: Create caddy system user
+  ansible.builtin.user:
+    name: caddy
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    home: /var/lib/caddy
+  become: true
+
+- name: Create Caddy data directory
+  ansible.builtin.file:
+    path: /var/lib/caddy
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: "0700"
+  become: true
+
+- name: Install Caddy binary with ACME-DNS plugin
+  ansible.builtin.get_url:
+    url: "https://caddyserver.com/api/download?os=linux&arch=amd64&version=v{{ caddy_version }}&p=github.com/caddy-dns/acmedns"
+    dest: /usr/bin/caddy
+    checksum: "{{ caddy_checksum }}"
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  notify: Restart caddy
+
+- name: Create Caddy config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/caddy
+    - /etc/caddy/sites.d
+  become: true
+
+- name: Create demo-sites.d directory ({{ ansible_user }}-writable)
+  ansible.builtin.file:
+    path: /etc/caddy/demo-sites.d
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+
+- name: Deploy Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload caddy config
+
+- name: Deploy caddy environment file
+  ansible.builtin.template:
+    src: caddy.env.j2
+    dest: /etc/caddy/.env
+    owner: root
+    group: root
+    mode: "0600"
+  become: true
+  notify: Restart caddy
+  when: caddy_dns_challenge
+
+- name: Deploy empty caddy environment file (no DNS challenge)
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/caddy/.env
+    owner: root
+    group: root
+    mode: "0600"
+  become: true
+  notify: Restart caddy
+  when: not caddy_dns_challenge
+
+- name: Deploy caddy systemd unit
+  ansible.builtin.template:
+    src: caddy.service.j2
+    dest: /etc/systemd/system/caddy.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart caddy
+
+- name: Flush handlers before starting service
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure caddy service is enabled and running
+  ansible.builtin.systemd:
+    name: caddy
+    enabled: true
+    state: started
+  become: true
+
+- name: Allow user to reload/restart caddy without password
+  ansible.builtin.copy:
+    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload caddy, /usr/bin/systemctl restart caddy\n"
+    dest: /etc/sudoers.d/caddy-reload
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+  become: true
+
+- name: Deploy caddy-reload convenience script
+  ansible.builtin.copy:
+    src: caddy-reload
+    dest: /usr/local/bin/caddy-reload
+    owner: root
+    group: root
+    mode: "0755"
+  become: true

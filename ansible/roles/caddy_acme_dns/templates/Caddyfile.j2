@@ -1,0 +1,31 @@
+{
+	admin unix//run/caddy/admin.sock
+	default_bind {{ tailscale_ip }}
+}
+
+*.demo.{{ domain }} {
+	tls internal
+
+	import /etc/caddy/demo-sites.d/*.caddy
+
+	handle {
+		respond "no route configured for {host}" 404
+	}
+}
+
+(tls_acmedns) {
+{% if caddy_dns_challenge %}
+	tls {
+		dns acmedns {
+			username {env.ACMEDNS_USERNAME}
+			password {env.ACMEDNS_PASSWORD}
+			subdomain {env.ACMEDNS_SUBDOMAIN}
+			server_url {env.ACMEDNS_SERVER_URL}
+		}
+	}
+{% else %}
+	tls internal
+{% endif %}
+}
+
+import /etc/caddy/sites.d/*.caddy
