@@ -1,6 +1,7 @@
 # Managed by Ansible (zsh_config role). Do not edit manually.
 # Ported from oh-my-zsh docker-compose plugin. Uses `docker compose` (Compose v2).
 
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
 
 alias dco="docker compose"
