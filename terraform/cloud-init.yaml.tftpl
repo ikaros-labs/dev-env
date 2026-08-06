@@ -49,10 +49,12 @@ runcmd:
 
   # Join the tailnet.
   # --ssh              enables Tailscale SSH (no inbound port needed).
-  # --advertise-tags   tag:dev-env enforces ACL policy and is used by
-  #                    gen-inventory.sh to assign the correct Ansible group.
+  # --advertise-tags   enforces ACL policy and is used by gen-inventory.sh
+  #                    to assign the correct Ansible group. Defaults to
+  #                    tag:dev-env; the self-serve portal appends a per-user
+  #                    tag (e.g. tag:dev-env,tag:dev-alice) for ACL isolation.
   # --auth-key         pre-authorized key.
-  - tailscale up --ssh --advertise-tags=tag:dev-env --auth-key='${tailscale_auth_key}'
+  - tailscale up --ssh --advertise-tags=${tailscale_tags} --auth-key='${tailscale_auth_key}'
 
   # Restart SSH daemon to pick up the hardening drop-in.
   - systemctl restart ssh
